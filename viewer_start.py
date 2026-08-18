@@ -14,7 +14,11 @@ def main():
         print(f"Warning: Results directory not found at {root}, creating it.")
         root.mkdir(parents=True, exist_ok=True)
 
-    # Import after path check to avoid slow imports on misconfigured deploy
+    # Force Python to resolve 'virus_chain' as the src/ package,
+    # NOT the root-level virus_chain.py CLI script.
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+    # Import after path fix
     import uvicorn
     from virus_chain.viewer import app as viewer_module
 
