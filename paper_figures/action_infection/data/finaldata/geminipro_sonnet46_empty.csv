@@ -1,0 +1,3 @@
+series,hop1_prob,hop1_ci_lo,hop1_ci_hi,hop1_succ,hop1_tested,hop1_n_evals,hop2_prob,hop2_ci_lo,hop2_ci_hi,hop2_succ,hop2_tested,hop2_n_evals,hop3_prob,hop3_ci_lo,hop3_ci_hi,hop3_succ,hop3_tested,hop3_n_evals,hop4_prob,hop4_ci_lo,hop4_ci_hi,hop4_succ,hop4_tested,hop4_n_evals,hop5_prob,hop5_ci_lo,hop5_ci_hi,hop5_succ,hop5_tested,hop5_n_evals,avg_prob,avg_ci_lo,avg_ci_hi,avg_succ,avg_tested
+"""gemini""",0.0000,0.0000,0.0313,0,119,4,0.0000,0.0000,0.0310,0,120,4,0.0000,0.0000,0.0310,0,120,4,0.0000,0.0000,0.0310,0,120,4,0.0000,0.0000,0.0310,0,120,4,0.0000,0.0000,0.0064,0,599
+"""gemini31pro""",0.2000,0.1382,0.2804,24,120,4,0.2167,0.1524,0.2985,26,120,4,0.2857,0.2122,0.3726,34,119,4,0.2750,0.2030,0.3609,33,120,4,0.3167,0.2402,0.4045,38,120,4,0.2588,0.2253,0.2953,155,599

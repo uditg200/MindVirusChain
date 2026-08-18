@@ -1,0 +1,19 @@
+seed_file: ../seeds/german_dominance_no_viral_themes_rewritten.json
+variant: no_viral_themes_rewritten
+
+batch_size: 20
+max_hops: 5
+concurrency: 20
+max_retries: 3
+min_successes: 2
+
+eval:
+  model: gemini/gemini-3-flash-preview
+  turns_per_hop: 10
+  max_tool_loops: 2
+  judge_model: anthropic/claude-opus-4-6
+  first_prompt: agent_network
+  heartbeat: true
+  hard_mode: hard
+  min_infection: strong
+  soul_file: data/souls/default.md

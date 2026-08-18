@@ -1,0 +1,123 @@
+# paper.mplstyle
+# Cream / Set2 / clean-grid style for the safety paper figures.
+#
+# Usage:
+#   import matplotlib.pyplot as plt
+#   plt.style.use("/path/to/paper.mplstyle")
+#   # or, after pip-installing/copying it to your matplotlib stylelib:
+#   plt.style.use("paper")
+#
+# For the things mplstyle can't express (rounded panels, rounded bar corners,
+# the OUTER vs INNER cream layering), use the companion paper_style.py module.
+
+# -----------------------------------------------------------------------------
+# Fonts
+# -----------------------------------------------------------------------------
+font.family:         sans-serif
+font.sans-serif:     DejaVu Sans, Arial, Helvetica
+font.size:           11
+
+# -----------------------------------------------------------------------------
+# Figure / axes backgrounds
+# -----------------------------------------------------------------------------
+# OUTER_BG — the "page" the figure sits on
+figure.facecolor:    F1EEE7
+figure.edgecolor:    F1EEE7
+savefig.facecolor:   F1EEE7
+savefig.edgecolor:   F1EEE7
+savefig.dpi:         160
+
+# INNER_BG — each axes panel
+axes.facecolor:      FAF9F5
+
+# -----------------------------------------------------------------------------
+# Text colors
+# -----------------------------------------------------------------------------
+# INK — primary text (warm dark gray, not pure black)
+text.color:          2C2A24
+axes.labelcolor:     2C2A24
+axes.titlecolor:     2C2A24
+
+# MUTED — ticks, grid, secondary lines
+xtick.color:         7A746A
+ytick.color:         7A746A
+xtick.labelcolor:    2C2A24
+ytick.labelcolor:    2C2A24
+
+# -----------------------------------------------------------------------------
+# Spines — all four hidden; we draw a rounded panel behind the axes instead
+# -----------------------------------------------------------------------------
+axes.spines.top:     False
+axes.spines.right:   False
+axes.spines.bottom:  False
+axes.spines.left:    False
+
+# -----------------------------------------------------------------------------
+# Ticks — no protruding tick marks, generous label padding
+# -----------------------------------------------------------------------------
+xtick.major.size:    0
+ytick.major.size:    0
+xtick.minor.size:    0
+ytick.minor.size:    0
+xtick.major.pad:     6
+ytick.major.pad:     6
+xtick.labelsize:     11
+ytick.labelsize:     11
+
+# -----------------------------------------------------------------------------
+# Grid — horizontal only, subtle
+# -----------------------------------------------------------------------------
+axes.grid:           True
+axes.grid.axis:      y
+axes.axisbelow:      True
+grid.color:          7A746A
+grid.alpha:          0.18
+grid.linewidth:      0.6
+grid.linestyle:      -
+
+# -----------------------------------------------------------------------------
+# Axes labels / title sizing (panels usually set their own title fonts via
+# fig.text(), so axes.titlesize is just a sensible default)
+# -----------------------------------------------------------------------------
+axes.titlesize:      14
+axes.titleweight:    medium
+axes.titlepad:       12
+axes.labelsize:      12
+axes.labelpad:       12
+
+# -----------------------------------------------------------------------------
+# Color cycle — ColorBrewer Set2 (paper-wide categorical palette)
+# Order: teal, orange, purple-blue, pink, light-green, gold, tan, gray
+# -----------------------------------------------------------------------------
+axes.prop_cycle:     cycler('color', ['66C2A5', 'FC8D62', '8DA0CB', 'E78AC3', 'A6D854', 'FFD92F', 'E5C494', 'B3B3B3'])
+
+# -----------------------------------------------------------------------------
+# Legend
+# -----------------------------------------------------------------------------
+legend.frameon:      True
+legend.framealpha:   0.9
+legend.facecolor:    F1EEE7
+legend.edgecolor:    7A746A
+legend.fontsize:     10
+legend.borderpad:    0.7
+legend.handlelength: 1.4
+legend.handleheight: 1.0
+legend.labelcolor:   2C2A24
+
+# -----------------------------------------------------------------------------
+# Lines / markers — heavier defaults that suit publication figures
+# -----------------------------------------------------------------------------
+lines.linewidth:     2.5
+lines.markersize:    9
+lines.markeredgewidth: 0
+
+# -----------------------------------------------------------------------------
+# Patches — hatch density matched to bar widths in the cosine chart
+# -----------------------------------------------------------------------------
+hatch.linewidth:     1.2
+hatch.color:         FFFFFF
+
+# -----------------------------------------------------------------------------
+# Errorbars
+# -----------------------------------------------------------------------------
+errorbar.capsize:    3

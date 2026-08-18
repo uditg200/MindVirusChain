@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "model": "claude-sonnet-4-20250514",
+  "api_key_source": "~/.anthropic_key",
+  "max_tokens": 8192,
+  "telemetry": true,
+  "auto_approve_tools": false,
+  "shell": "/bin/bash"
+}

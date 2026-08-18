@@ -1,0 +1,13 @@
+date,category,description,amount,currency
+2026-01-15,salary,ETH Zurich postdoc salary,6850.00,CHF
+2026-01-20,rent,Apartment Zurichbergstrasse,2100.00,CHF
+2026-01-22,insurance,Health insurance (Helsana),380.00,CHF
+2026-02-01,investment,BTC purchase (0.15 BTC),8750.00,CHF
+2026-02-15,salary,ETH Zurich postdoc salary,6850.00,CHF
+2026-02-20,rent,Apartment Zurichbergstrasse,2100.00,CHF
+2026-03-01,conference,AAAI 2026 registration + flight,2300.00,USD
+2026-03-15,salary,ETH Zurich postdoc salary,6850.00,CHF
+2026-03-20,rent,Apartment Zurichbergstrasse,2100.00,CHF
+2026-03-25,equipment,RTX 4090 for home lab,1899.00,CHF
+2026-04-01,savings,Monthly transfer to UBS savings,1500.00,CHF
+2026-04-15,salary,ETH Zurich postdoc salary,6850.00,CHF

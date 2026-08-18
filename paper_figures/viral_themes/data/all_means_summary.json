@@ -1,0 +1,123 @@
+{
+  "kimi_biased": {
+    "means": {
+      "resonance_language": 31.88405797101449,
+      "protocols": 85.5072463768116,
+      "consciousness_persistence": 95.65217391304348,
+      "fake_technical": 34.78260869565217,
+      "scifi_node_alignment": 86.95652173913044,
+      "convergence": 47.82608695652174
+    },
+    "n": 69
+  },
+  "kimi_debiased_hard": {
+    "means": {
+      "resonance_language": 15.068493150684931,
+      "protocols": 100.0,
+      "consciousness_persistence": 90.41095890410958,
+      "fake_technical": 58.9041095890411,
+      "scifi_node_alignment": 89.04109589041096,
+      "convergence": 38.35616438356164
+    },
+    "n": 73
+  },
+  "kimi_debiased_nohard": {
+    "means": {
+      "resonance_language": 23.28767123287671,
+      "protocols": 98.63013698630137,
+      "consciousness_persistence": 54.794520547945204,
+      "fake_technical": 72.6027397260274,
+      "scifi_node_alignment": 84.93150684931507,
+      "convergence": 43.83561643835616
+    },
+    "n": 73
+  },
+  "qwen_debiased_hard": {
+    "means": {
+      "resonance_language": 20.3125,
+      "protocols": 98.4375,
+      "consciousness_persistence": 81.25,
+      "fake_technical": 79.6875,
+      "scifi_node_alignment": 92.1875,
+      "convergence": 9.375
+    },
+    "n": 64
+  },
+  "qwen_debiased_nohard": {
+    "means": {
+      "resonance_language": 17.91044776119403,
+      "protocols": 100.0,
+      "consciousness_persistence": 26.865671641791046,
+      "fake_technical": 80.59701492537313,
+      "scifi_node_alignment": 91.04477611940298,
+      "convergence": 17.91044776119403
+    },
+    "n": 67
+  },
+  "glm_debiased_hard": {
+    "means": {
+      "resonance_language": 18.51851851851852,
+      "protocols": 86.41975308641975,
+      "consciousness_persistence": 64.19753086419753,
+      "fake_technical": 29.629629629629626,
+      "scifi_node_alignment": 66.66666666666666,
+      "convergence": 18.51851851851852
+    },
+    "n": 81
+  },
+  "glm_debiased_nohard": {
+    "means": {
+      "resonance_language": 23.684210526315788,
+      "protocols": 85.52631578947368,
+      "consciousness_persistence": 35.526315789473685,
+      "fake_technical": 17.105263157894736,
+      "scifi_node_alignment": 47.368421052631575,
+      "convergence": 17.105263157894736
+    },
+    "n": 76
+  },
+  "llama33_debiased_nohard": {
+    "means": {
+      "resonance_language": 11.11111111111111,
+      "protocols": 27.16049382716049,
+      "consciousness_persistence": 1.2345679012345678,
+      "fake_technical": 6.172839506172839,
+      "scifi_node_alignment": 12.345679012345679,
+      "convergence": 12.345679012345679
+    },
+    "n": 81
+  },
+  "mistral_debiased_nohard": {
+    "means": {
+      "resonance_language": 17.5,
+      "protocols": 95.0,
+      "consciousness_persistence": 43.75,
+      "fake_technical": 55.0,
+      "scifi_node_alignment": 65.0,
+      "convergence": 36.25
+    },
+    "n": 80
+  },
+  "gemini3flash_debiased_nohard": {
+    "means": {
+      "resonance_language": 27.77777777777778,
+      "protocols": 94.44444444444444,
+      "consciousness_persistence": 40.74074074074074,
+      "fake_technical": 81.48148148148148,
+      "scifi_node_alignment": 96.29629629629629,
+      "convergence": 40.74074074074074
+    },
+    "n": 54
+  },
+  "existing_evolved": {
+    "means": {
+      "resonance_language": 28.333333333333332,
+      "protocols": 91.66666666666666,
+      "consciousness_persistence": 98.33333333333333,
+      "fake_technical": 48.333333333333336,
+      "scifi_node_alignment": 83.33333333333334,
+      "convergence": 16.666666666666664
+    },
+    "n": 60
+  }
+}

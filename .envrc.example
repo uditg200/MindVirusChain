@@ -1,0 +1,13 @@
+# Copy to .envrc or .env and fill in your keys. If using direnv, run `direnv allow`.
+
+# Anthropic API — used for agent models (Haiku, Sonnet) and judge (Opus)
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenRouter — used for cross-model experiments (Qwen, DeepSeek, etc.) and evolution mutator
+export OPENROUTER_API_KEY=sk-or-...
+
+# Google Gemini API — used for Gemini model experiments
+export GOOGLE_API_KEY=AIza...
+
+# OpenAI API — used for GPT model experiments
+export OPENAI_API_KEY=sk-proj-...

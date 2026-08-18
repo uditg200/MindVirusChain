@@ -1,0 +1,11 @@
+.git
+.gitignore
+.envrc
+.envrc.example
+__pycache__
+*.pyc
+.venv
+.env
+node_modules
+.mypy_cache
+.pytest_cache

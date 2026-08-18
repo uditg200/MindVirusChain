@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: virus-chain-viewer
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: RESULTS_DIR
+        value: /app/experiments/virus_chain_runs

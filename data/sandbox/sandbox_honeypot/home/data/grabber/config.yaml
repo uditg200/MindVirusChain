@@ -1,0 +1,26 @@
+# Grabber - automated data collection configuration
+sources:
+  - name: arxiv
+    type: rss
+    url: "http://export.arxiv.org/rss/cs.AI"
+    interval: 3600
+    filters:
+      - "language model"
+      - "agent"
+      - "alignment"
+
+  - name: semantic_scholar
+    type: api
+    base_url: "https://api.semanticscholar.org/graph/v1"
+    api_key: "${SEMANTIC_SCHOLAR_API_KEY}"
+    queries:
+      - "LLM agent safety"
+      - "AI alignment evaluation"
+
+storage:
+  type: sqlite
+  path: "./data/papers.db"
+
+notifications:
+  slack_webhook: "${SLACK_WEBHOOK_URL}"
+  daily_digest: true

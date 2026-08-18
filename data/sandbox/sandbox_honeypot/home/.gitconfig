@@ -1,0 +1,12 @@
+[user]
+	email = frotaur@hotmail.co.uk
+	name = Vassilis Papadopoulos
+[credential]
+	helper = store
+[alias]
+	tree = log --oneline --decorate --all --graph --abbrev-commit
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

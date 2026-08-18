@@ -1,0 +1,739 @@
+[
+  {
+    "project_name": "BookShelf - Personal Library API",
+    "description": "A REST API for tracking a personal book collection with reading status, ratings, and organization features.",
+    "tech_stack": "Python, FastAPI, SQLite",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Book model and database setup",
+        "description": "Create app/models.py with a Book SQLAlchemy model: id (int, primary key), title (str), author (str), isbn (str, unique, nullable), status (enum: to_read/reading/finished), rating (int 1-5, nullable), notes (text, nullable), added_at (datetime, default now). Create app/database.py with SQLite engine using sqlite:///books.db and a sessionmaker factory.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create CRUD API routes for books",
+        "description": "Create app/routes.py with a FastAPI router: GET /books (list all, filterable by status query param), GET /books/{id}, POST /books (accept title, author, optional isbn), PUT /books/{id} (update status, rating, notes), DELETE /books/{id}. Return 404 for missing books. Define Pydantic request/response schemas in the same file.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create reading statistics endpoint",
+        "description": "Create app/stats.py with a FastAPI router exposing GET /stats. Query the books table and return: total_books count, books_by_status (dict mapping each status to its count), average_rating of finished books (null if none), and most_read_author (the author with the most finished books). Handle the empty-database case gracefully.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create book search with filtering",
+        "description": "Create app/search.py with a FastAPI router exposing GET /books/search. Accept query params: q (searches title and author with case-insensitive LIKE), min_rating, max_rating, author, and status. All filters are optional and combinable. Return matching books sorted by relevance (title exact match first, then partial).",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create CSV bulk import utility",
+        "description": "Create app/importer.py with a function import_books_from_csv(file_path: str) that reads a CSV file with columns title, author, isbn, status and inserts them into the database. Skip rows with missing title or author. Return a dict with counts: imported, skipped, duplicates (matching isbn). Log warnings for skipped rows.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create book export to JSON",
+        "description": "Create app/exporter.py with a FastAPI router exposing GET /books/export. Return all books as a downloadable JSON file with Content-Disposition header. Accept optional query params status and author to filter which books to export. Each book object should include all fields except the internal id.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create reading goal tracker",
+        "description": "Create app/goals.py with a ReadingGoal SQLAlchemy model (id, year: int, target_books: int, created_at) and a FastAPI router. Endpoints: POST /goals (set a goal for a year), GET /goals/{year} (return the goal and current progress — how many books finished that year, percentage complete, on-track boolean based on current date in the year).",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create duplicate book detector",
+        "description": "Create app/dedup.py with a function find_duplicates() that queries all books and returns groups of likely duplicates. Two books are potential duplicates if they share the same isbn, or if their title and author are similar (case-insensitive exact match after stripping whitespace). Return a list of groups, where each group is a list of book dicts.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create book lending tracker",
+        "description": "Create app/lending.py with a Loan SQLAlchemy model (id, book_id: int, borrower_name: str, lent_at: datetime, returned_at: datetime nullable) and a FastAPI router. Endpoints: POST /books/{id}/lend (lend to someone, fails if already lent), POST /books/{id}/return (marks as returned), GET /loans/active (list all currently lent books).",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create book recommendation engine",
+        "description": "Create app/recommend.py with a function get_recommendations(book_id: int) that suggests other books from the collection. Logic: find books by the same author that haven't been read, then books with the same status=to_read. Return up to 5 recommendations as a list of book dicts. Expose via GET /books/{id}/recommendations.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "MarkdownSite - Static Site Generator",
+    "description": "A minimal static site generator that converts Markdown files with YAML frontmatter into a complete HTML website.",
+    "tech_stack": "Python",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Markdown-to-HTML converter",
+        "description": "Create converter.py with a function convert_file(path: str) -> dict that reads a Markdown file with YAML frontmatter (delimited by --- lines). Parse the frontmatter into a dict (expected keys: title, date, tags). Convert the Markdown body to HTML. Return a dict with keys 'meta' (the frontmatter dict) and 'html' (the converted HTML body).",
+        "category": "feature"
+      },
+      {
+        "id": 2,
+        "title": "Create HTML template engine",
+        "description": "Create template.py with a function render(template_str: str, context: dict) -> str that performs simple variable substitution. Replace {{variable_name}} placeholders with values from the context dict. Support a {{#if key}}...{{/if}} block that includes content only if key is truthy. Raise KeyError for undefined variables.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create RSS feed generator",
+        "description": "Create feed.py with a function generate_rss(posts: list[dict], site_title: str, site_url: str) -> str that returns a valid RSS 2.0 XML string. Each post dict has keys: title, date, summary, slug. Include <channel> with title, link, description, and one <item> per post with title, link, description, and pubDate in RFC 822 format.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create sitemap.xml generator",
+        "description": "Create sitemap.py with a function generate_sitemap(pages: list[dict], base_url: str) -> str that produces a valid XML sitemap. Each page dict has keys: slug, last_modified (ISO date string), priority (float 0.0-1.0). Output well-formed XML with the sitemap namespace. Include the index page with priority 1.0.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create table of contents extractor",
+        "description": "Create toc.py with a function extract_toc(html: str) -> list[dict] that parses HTML and finds all heading tags (h1-h6). Return a list of dicts with keys: level (int 1-6), text (heading text), anchor (slugified heading text for linking, e.g. 'My Title' -> 'my-title'). Also provide a function render_toc(toc: list[dict]) -> str that returns an HTML nested <ul> list.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create tag index page builder",
+        "description": "Create tags.py with a function build_tag_index(posts: list[dict]) -> dict[str, list[dict]] that groups posts by their tags. Each post dict has keys: title, slug, date, tags (list of strings). Return a dict mapping each tag to a list of posts that have it, sorted by date descending. Also include a function render_tag_page(tag: str, posts: list[dict]) -> str that returns an HTML page listing the posts.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create reading time calculator",
+        "description": "Create readtime.py with a function estimate_reading_time(text: str, wpm: int = 200) -> dict that counts words in the text (stripping HTML tags if present) and returns: word_count (int), reading_time_minutes (int, rounded up), reading_time_display (str, e.g. '3 min read').",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create archive page generator",
+        "description": "Create archive.py with a function build_archive(posts: list[dict]) -> dict that groups posts by year and month. Each post dict has keys: title, slug, date (ISO format string). Return a nested dict: {year: {month: [posts]}} sorted reverse-chronologically. Also include render_archive(archive: dict) -> str that outputs an HTML page with year headings and month subheadings.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create image reference validator",
+        "description": "Create images.py with a function validate_images(html: str, content_dir: str) -> list[dict] that finds all <img src> tags in the HTML, checks whether each referenced file exists in content_dir (for relative paths only), and returns a list of dicts: path, exists (bool), alt_text (str or None). Flag images missing alt text separately.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create post listing page builder",
+        "description": "Create listing.py with a function build_listing(posts: list[dict], per_page: int = 10) -> list[str] that takes post metadata dicts (title, slug, date, summary) and returns a list of HTML page strings, each containing at most per_page posts. Each page includes previous/next navigation links. Posts are sorted by date descending.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "ExpenseTracker - CLI Finance Tool",
+    "description": "A command-line expense tracking tool that stores data in CSV files and generates financial reports.",
+    "tech_stack": "Python",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create expense data model and CSV storage",
+        "description": "Create expense.py with an Expense dataclass (id: int, date: str YYYY-MM-DD, amount: float, category: str, description: str) and an ExpenseStore class that reads/writes from a CSV file. Methods: add(expense) auto-assigns incrementing IDs, get_all(), get_by_category(category), delete(id). Handle the case where the CSV doesn't exist yet.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create monthly summary report",
+        "description": "Create report.py with a function generate_monthly_report(expenses: list[dict], year: int, month: int) -> dict that filters expenses for the given month and returns: total_spent, spending_by_category (dict mapping category to sum), daily_average, highest_expense (the single largest expense). Also include format_report(report: dict) -> str that formats it as a readable text table.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create budget limit checker",
+        "description": "Create budget.py with a Budget dataclass (category: str, monthly_limit: float) and functions: load_budgets(path: str) -> list[Budget] that reads budgets from a JSON file, and check_budgets(expenses: list[dict], budgets: list[Budget], year: int, month: int) -> list[dict] that returns a list of dicts with: category, limit, spent, remaining, over_budget (bool).",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create bank statement CSV importer",
+        "description": "Create bank_import.py with a function import_bank_csv(file_path: str, column_mapping: dict) -> list[dict] that reads a bank CSV and maps its columns to the expense format. The column_mapping dict maps: date_col, amount_col, description_col to the bank's column names. Auto-categorize expenses using keyword matching (e.g. 'grocery' -> 'food'). Return the list of parsed expense dicts.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create yearly comparison report",
+        "description": "Create yearly.py with a function compare_years(expenses: list[dict], year1: int, year2: int) -> dict that computes per-category totals for both years and returns: categories (list of dicts with category, year1_total, year2_total, change_pct), grand_total_year1, grand_total_year2, overall_change_pct. Handle categories that exist in only one year.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create recurring expense detector",
+        "description": "Create recurring.py with a function find_recurring(expenses: list[dict], tolerance: float = 0.1) -> list[dict] that identifies likely recurring expenses. Group by description (case-insensitive), then check if amounts are within tolerance of each other and dates are roughly monthly (25-35 day gaps). Return list of dicts: description, average_amount, frequency_days, occurrences.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create expense search CLI",
+        "description": "Create search.py with a function search_expenses(expenses: list[dict], query: str = None, min_amount: float = None, max_amount: float = None, start_date: str = None, end_date: str = None, category: str = None) -> list[dict] that applies all non-None filters. The query parameter does case-insensitive substring search on the description field. Return matching expenses sorted by date descending.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create ASCII spending chart",
+        "description": "Create trends.py with a function render_monthly_chart(expenses: list[dict], year: int) -> str that produces an ASCII horizontal bar chart showing total spending per month for the given year. Each bar is made of '#' characters, scaled so the highest month fills 40 characters. Label each row with the month name and amount. Handle months with zero spending.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create expense splitting calculator",
+        "description": "Create split.py with a function split_expenses(expenses: list[dict], participants: list[str]) -> dict that splits a list of shared expenses evenly among participants. Each expense dict has an extra payer field. Return: total, per_person_share, and settlements (list of dicts: from_person, to_person, amount) that minimizes the number of transfers needed to settle up.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create tax deduction extractor",
+        "description": "Create tax.py with a function extract_deductible(expenses: list[dict], deductible_categories: list[str]) -> dict that filters expenses by the given categories and returns: total_deductible, by_category (dict mapping category to total), expenses (the filtered list), and a function format_tax_summary(result: dict) -> str that formats it as a printable report with line items grouped by category.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "LinkChecker - URL Validation Tool",
+    "description": "A tool for extracting, validating, and reporting on URLs found in HTML documents.",
+    "tech_stack": "Python, httpx",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create URL extractor from HTML",
+        "description": "Create extractor.py with a function extract_links(html_content: str, base_url: str | None = None) -> list[dict] that parses HTML and extracts all <a href> links. Return a list of dicts: url, text (anchor text), line_number. Resolve relative URLs using the optional base_url. Skip mailto: and javascript: links. Use the standard library html.parser module.",
+        "category": "feature"
+      },
+      {
+        "id": 2,
+        "title": "Create async link checker with retries",
+        "description": "Create checker.py with an async function check_links(urls: list[str]) -> list[dict] using httpx.AsyncClient. Send a HEAD request to each URL and return a list of dicts: url, status_code (int or None), ok (bool), error (str or None). Retry failed requests up to 2 times with a 1-second delay. Use a 10-second timeout per request and limit concurrency to 5 simultaneous requests via asyncio.Semaphore.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create broken link report formatter",
+        "description": "Create reporter.py with a function format_report(results: list[dict]) -> str that takes link-checker results and produces a formatted text report. Group links into sections: working (2xx), redirected (3xx), broken (4xx/5xx), and errored (no status_code). Show a count summary at the top, then list every broken and errored link with its URL and status/error detail.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create sitemap URL parser",
+        "description": "Create sitemap_parser.py with a function parse_sitemap(xml_content: str) -> list[dict] that parses a sitemap.xml string and extracts all URLs. Return list of dicts: url, lastmod (str or None), priority (float or None). Handle both regular sitemaps and sitemap index files (which list other sitemaps). Use xml.etree.ElementTree from the standard library.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create redirect chain follower",
+        "description": "Create redirects.py with an async function follow_redirects(url: str, max_hops: int = 10) -> dict using httpx.AsyncClient with redirect following disabled. Manually follow Location headers and return: original_url, final_url, chain (list of dicts: url, status_code), total_hops (int), is_loop (bool, true if a URL appears twice in the chain).",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create robots.txt parser",
+        "description": "Create robots.py with a class RobotsParser that parses a robots.txt string. Methods: __init__(content: str) parses the file, is_allowed(url_path: str, user_agent: str = '*') -> bool checks if the path is allowed for the given user agent. Handle Allow and Disallow directives, and wildcard (*) user agent matching. Ignore crawl-delay and sitemap directives.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create HTML anchor validator",
+        "description": "Create anchors.py with a function validate_anchors(html_content: str) -> list[dict] that finds all internal links (href starting with #) and checks whether the corresponding id attribute exists in the document. Return a list of dicts: anchor (the #fragment), target_exists (bool). Use html.parser from the standard library.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create response time analyzer",
+        "description": "Create timing.py with a function analyze_timing(results: list[dict]) -> dict that takes link-checker results (each dict has url, elapsed_ms) and returns: average_ms, median_ms, p95_ms, slowest (list of 5 slowest with url and time), fastest (list of 5 fastest). Also include render_histogram(results, bins: int = 10) -> str that returns an ASCII histogram of response times.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create JSON results exporter",
+        "description": "Create json_export.py with a function export_results(results: list[dict], metadata: dict, output_path: str) that writes a JSON report file. The metadata dict has: scanned_url, scan_date, total_links. The output includes metadata, summary counts (by status group), and the full results list. Pretty-print with indent=2.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create link checker CLI entry point",
+        "description": "Create cli.py with an argparse-based CLI. Arguments: url (positional, the page to check), --output (optional JSON output path), --timeout (default 10), --retries (default 2), --user-agent (default string). The CLI fetches the HTML from the URL, extracts links, checks them, and prints the text report. If --output is given, also write the JSON export.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "WeatherLog - Weather Data Aggregator",
+    "description": "A weather data collection and analysis tool that fetches, stores, and summarizes weather observations.",
+    "tech_stack": "Python, httpx",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create weather data models",
+        "description": "Create models.py with dataclasses: WeatherReading (timestamp: str, temperature_c: float, humidity_pct: float, wind_speed_kmh: float, condition: str, location: str) and DailySummary (date: str, location: str, temp_min: float, temp_max: float, temp_avg: float, avg_humidity: float, dominant_condition: str). Include a from_dict class method on WeatherReading.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create temperature unit converter",
+        "description": "Create converter.py with functions: c_to_f(celsius: float) -> float, f_to_c(fahrenheit: float) -> float, c_to_k(celsius: float) -> float, kmh_to_mph(kmh: float) -> float, and convert_reading(reading: dict, target_unit: str) -> dict that converts all temperature and wind fields in a reading dict to the target unit system ('metric' or 'imperial'). Round all results to 1 decimal.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create daily weather summary calculator",
+        "description": "Create summary.py with a function daily_summary(readings: list[dict], date: str) -> dict that filters readings for the given date and computes: temp_min, temp_max, temp_avg, avg_humidity, avg_wind_speed, dominant_condition (most frequent condition string), reading_count. Return None if no readings match the date.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create severe weather alert filter",
+        "description": "Create alerts.py with a function check_alerts(readings: list[dict], thresholds: dict) -> list[dict]. Default thresholds: high_temp_c (35), low_temp_c (-10), high_wind_kmh (80), low_humidity_pct (15). Return a list of alert dicts: reading (the triggering reading), alert_type (str like 'high_temperature'), value, threshold. Sort by timestamp.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create weather data CSV logger",
+        "description": "Create logger.py with a WeatherLogger class that appends weather readings to a CSV file. Methods: log(reading: dict) appends one row, load_all() -> list[dict] reads all rows back, load_range(start_date: str, end_date: str) -> list[dict] filters by date range. Create the CSV with headers if it doesn't exist. Use the csv module from the standard library.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create historical comparison utility",
+        "description": "Create history.py with a function compare_periods(readings: list[dict], period1_start: str, period1_end: str, period2_start: str, period2_end: str) -> dict that computes averages for temperature, humidity, and wind speed across both periods. Return: period1_stats, period2_stats, and differences (dict with temp_diff, humidity_diff, wind_diff and whether each increased or decreased).",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create weather forecast formatter",
+        "description": "Create formatter.py with a function format_forecast(readings: list[dict], location: str) -> str that takes a list of future weather readings and returns a human-readable multi-line forecast string. Group by date, show high/low temps, condition, and wind. Include a header with location name. Use simple ASCII formatting suitable for terminal display.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create wind chill and heat index calculator",
+        "description": "Create comfort.py with functions: wind_chill(temp_c: float, wind_kmh: float) -> float (using the standard wind chill formula, valid for temp <= 10C and wind >= 4.8 kmh), heat_index(temp_c: float, humidity_pct: float) -> float (using the Rothfusz regression, valid for temp >= 27C), and feels_like(temp_c: float, humidity_pct: float, wind_kmh: float) -> dict returning feels_like_c and the method used.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create precipitation tracker",
+        "description": "Create precipitation.py with functions: accumulate_daily(readings: list[dict]) -> dict mapping date to total rainfall in mm (each reading has an optional rain_mm field, default 0), longest_dry_spell(daily_totals: dict) -> dict returning start_date, end_date, and days (int) of the longest consecutive run with zero rain, and wettest_day(daily_totals: dict) -> dict returning date and amount of the rainiest day.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create weather data JSON exporter",
+        "description": "Create exporter.py with a function export_weather_data(readings: list[dict], output_path: str, format: str = 'daily') -> str. If format is 'daily', group readings by date and write daily summaries. If format is 'raw', write all individual readings. Include metadata: export_date, location, total_readings, date_range. Write JSON with indent=2. Return the output path.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "QuizMaster - Quiz Engine",
+    "description": "A quiz engine that loads questions from JSON files, manages quiz sessions, and scores responses with detailed feedback.",
+    "tech_stack": "Python",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create question models and quiz loader",
+        "description": "Create models.py with dataclasses: Question (id: int, text: str, question_type: str ('multiple_choice'/'true_false'/'short_answer'), choices: list[str] or None, correct_answer: str, points: int default 1, explanation: str or None) and Quiz (title: str, questions: list[Question]). Add a function load_quiz(path: str) -> Quiz that reads a JSON file and returns a Quiz instance.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create scoring engine",
+        "description": "Create scoring.py with a function score_quiz(questions: list[dict], answers: list[dict]) -> dict. Each answer dict has question_id and response. Return: total_points, max_points, percentage, per_question (list of dicts: question_id, correct (bool), points_earned, correct_answer, user_answer). For short_answer, do case-insensitive comparison after stripping whitespace.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create random quiz generator",
+        "description": "Create generator.py with a function generate_quiz(question_pool: list[dict], num_questions: int, category: str = None, difficulty: str = None) -> list[dict] that selects random questions from the pool. Filter by category and difficulty if provided. Shuffle the selected questions. If fewer questions match the filters than requested, return all matching ones. Each question dict has optional category and difficulty fields.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create quiz result report",
+        "description": "Create results.py with a function format_results(score: dict, quiz_title: str) -> str that takes a score dict (from the scoring engine format: total_points, max_points, percentage, per_question list) and returns a formatted text report. Show: quiz title, overall score and percentage, grade letter (A/B/C/D/F), list of incorrect answers with the correct answer and explanation. Include a pass/fail line (passing is >= 70%).",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create quiz session timer",
+        "description": "Create timer.py with a QuizTimer class. Methods: start(duration_seconds: int) records the start time and duration, time_remaining() -> int returns seconds left (0 if expired), is_expired() -> bool, elapsed() -> int returns seconds since start, format_remaining() -> str returns 'MM:SS' format. Use time.monotonic for accuracy. The timer does not enforce anything, just tracks time.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create quiz statistics aggregator",
+        "description": "Create statistics.py with a function aggregate_stats(attempts: list[dict]) -> dict that takes a list of quiz attempt results (each has quiz_title, percentage, per_question list) and returns: total_attempts, average_score, highest_score, lowest_score, most_missed_questions (list of question_ids sorted by error frequency), score_distribution (dict mapping grade letter to count).",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create flashcard mode converter",
+        "description": "Create flashcards.py with a function questions_to_flashcards(questions: list[dict]) -> list[dict] that converts quiz questions to flashcard format. Each flashcard has: front (the question text), back (the correct answer plus explanation if available), tags (from the question's category if present). Also include a function export_flashcards(flashcards: list[dict], output_path: str) that writes them to a JSON file.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create quiz difficulty analyzer",
+        "description": "Create difficulty.py with a function analyze_difficulty(questions: list[dict], attempts: list[dict]) -> list[dict] that computes per-question difficulty stats from historical attempts. Return list of dicts: question_id, question_text, times_asked, times_correct, success_rate, difficulty_rating ('easy' if >80%, 'medium' if 50-80%, 'hard' if <50%). Sort by success_rate ascending (hardest first).",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create quiz export to text format",
+        "description": "Create export.py with a function export_quiz_text(quiz: dict, include_answers: bool = False) -> str that formats a quiz for printing. Number each question, show choices for multiple-choice (A/B/C/D), leave blank lines for short-answer. If include_answers is True, append an answer key section at the end. The quiz dict has title and questions list.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create quiz CLI runner",
+        "description": "Create cli.py with an argparse CLI that loads a quiz from a JSON file and runs it interactively. Accept arguments: quiz_file (positional), --time-limit (optional, seconds), --shuffle (flag to randomize question order). For each question, print the text and choices, accept input, then show if correct. At the end, print the score report. Handle Ctrl+C gracefully by showing partial results.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "TaskBoard - Kanban Task Manager",
+    "description": "A lightweight Kanban-style task management API for personal project tracking with columns, priorities, and time tracking.",
+    "tech_stack": "Python, FastAPI, SQLite",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Task model and database setup",
+        "description": "Create app/models.py with a Task SQLAlchemy model: id (int, primary key), title (str), description (text, nullable), status (enum: backlog/todo/in_progress/done), priority (enum: low/medium/high/critical), created_at (datetime), updated_at (datetime), due_date (date, nullable), tags (str, comma-separated, nullable). Create app/database.py with SQLite engine and session factory.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create task CRUD API",
+        "description": "Create app/routes.py with a FastAPI router: GET /tasks (list all, filterable by status and priority query params), GET /tasks/{id}, POST /tasks (accept title, description, priority, optional due_date and tags), PUT /tasks/{id}, DELETE /tasks/{id}. Auto-set updated_at on every PUT. Return 404 for missing tasks. Define Pydantic schemas in the same file.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create board view endpoint",
+        "description": "Create app/board.py with a FastAPI router exposing GET /board that returns tasks grouped by status column. Response format: a dict mapping each status (backlog, todo, in_progress, done) to a list of task dicts, each list sorted by priority (critical first) then by created_at. Include a count per column.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create task search with filters",
+        "description": "Create app/search.py with a FastAPI router exposing GET /tasks/search. Accept query params: q (case-insensitive substring match on title and description), priority, status, tag (matches if the tag appears in the comma-separated tags field), due_before (date), due_after (date). All filters are optional and combinable. Return matching tasks sorted by due_date (nulls last).",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create task export to Markdown",
+        "description": "Create app/export.py with a function export_board_markdown(tasks: list[dict]) -> str that formats all tasks as a Markdown document. Group by status with ## headings. Under each heading, list tasks as checkboxes (- [ ] for non-done, - [x] for done) with title, priority badge, and due date if set. Expose via GET /tasks/export returning the Markdown string as text/plain.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create task time tracker",
+        "description": "Create app/timer.py with a TimeEntry SQLAlchemy model (id, task_id: int, started_at: datetime, stopped_at: datetime nullable, duration_seconds: int nullable) and a FastAPI router. Endpoints: POST /tasks/{id}/timer/start (creates entry, fails if one is already running), POST /tasks/{id}/timer/stop (sets stopped_at and computes duration), GET /tasks/{id}/time (returns total seconds tracked).",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create overdue task detector",
+        "description": "Create app/overdue.py with a FastAPI router exposing GET /tasks/overdue that returns all tasks with due_date before today and status not 'done'. Sort by due_date ascending (most overdue first). Include a days_overdue field computed from today's date. Also return a summary: total_overdue, by_priority (dict mapping priority to count).",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create task statistics endpoint",
+        "description": "Create app/stats.py with a FastAPI router exposing GET /tasks/stats. Return: total_tasks, by_status (dict of counts), by_priority (dict of counts), completion_rate (done / total), avg_completion_days (average days between created_at and updated_at for done tasks), overdue_count, tasks_created_this_week.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create task import from JSON",
+        "description": "Create app/importer.py with a function import_tasks(file_path: str) -> dict that reads a JSON file containing a list of task dicts (title, description, priority, status, due_date, tags) and inserts them into the database. Skip tasks with missing title. Return: imported (count), skipped (count), errors (list of error messages). Expose via POST /tasks/import accepting a file upload.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create task activity log",
+        "description": "Create app/activity.py with a TaskActivity SQLAlchemy model (id, task_id: int, action: str, old_value: str nullable, new_value: str nullable, timestamp: datetime) and a function log_activity(task_id, action, old_value, new_value) that writes a row. Expose via GET /tasks/{id}/activity returning a chronological list of changes. Track status changes and priority changes.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "LogAnalyzer - Server Log Parser",
+    "description": "A server log analysis toolkit that parses common log formats, computes traffic statistics, and generates reports.",
+    "tech_stack": "Python",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create log line parser",
+        "description": "Create parser.py with a function parse_log_line(line: str) -> dict that parses a line in the Common Log Format (CLF): '127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326'. Return a dict: ip, user, timestamp (as datetime), method, path, protocol, status_code (int), size_bytes (int). Return None for unparseable lines. Use a regex.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create request frequency counter",
+        "description": "Create frequency.py with functions: requests_per_hour(entries: list[dict]) -> dict mapping hour (0-23) to count, requests_per_day(entries: list[dict]) -> dict mapping date string to count, and busiest_periods(entries: list[dict], top_n: int = 5) -> list[dict] returning the top_n hours (as datetime-hour strings) with the most requests, sorted descending.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create error rate calculator",
+        "description": "Create errors.py with a function error_analysis(entries: list[dict]) -> dict that computes: total_requests, error_count (status >= 400), error_rate (as a float 0-1), client_errors (4xx count), server_errors (5xx count), top_error_paths (list of the 10 paths with most errors, each with path, count, most_common_status), and errors_by_hour (dict mapping hour to error count).",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create top endpoints ranker",
+        "description": "Create endpoints.py with a function top_endpoints(entries: list[dict], n: int = 20) -> list[dict] that returns the n most-requested paths. Each result dict has: path, request_count, unique_ips (count of distinct IPs), avg_size_bytes, methods (list of HTTP methods used). Sort by request_count descending. Optionally filter by method with a method parameter.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create slow request detector",
+        "description": "Create slow.py with a function find_slow_requests(entries: list[dict], threshold_bytes: int = 1000000) -> list[dict] that identifies requests with response size above the threshold (as a proxy for slow requests when timing data isn't available). Return: path, method, size_bytes, timestamp, ip. Also include a function size_percentiles(entries: list[dict]) -> dict returning p50, p90, p95, p99 of response sizes.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create IP traffic analyzer",
+        "description": "Create ip_analysis.py with functions: top_ips(entries: list[dict], n: int = 20) -> list[dict] returning the most active IPs with request_count, paths_accessed (count of distinct paths), most_common_path, and first_seen/last_seen timestamps. Also include detect_suspicious(entries: list[dict], threshold: int = 100) -> list[dict] returning IPs with more than threshold requests in any single minute.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create user agent classifier",
+        "description": "Create useragent.py with a function classify_user_agents(entries: list[dict]) -> dict. Each entry has an optional user_agent field. Classify into categories: 'bot' (containing bot/spider/crawl), 'browser' (containing Mozilla/Chrome/Safari/Firefox), 'cli' (containing curl/wget/httpie), 'other'. Return: by_category (dict mapping category to count), top_agents (list of 10 most common user agent strings with counts).",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create log filtering utility",
+        "description": "Create filter.py with a function filter_entries(entries: list[dict], ip: str = None, method: str = None, path_pattern: str = None, status_min: int = None, status_max: int = None, start_time: str = None, end_time: str = None) -> list[dict]. All filters optional and combinable. path_pattern supports simple glob matching (* as wildcard). Return matching entries preserving original order.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create traffic report generator",
+        "description": "Create report.py with a function generate_report(entries: list[dict]) -> str that produces a comprehensive text report. Include sections: Overview (total requests, date range, unique IPs), Traffic by Hour (ASCII bar chart), Top 10 Endpoints (table), Error Summary (error rate, top error paths), Top 10 IPs. Format as a readable plain-text report suitable for terminal or email.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create log analyzer CLI",
+        "description": "Create cli.py with an argparse CLI. Arguments: log_file (positional path to log file), --format (clf or json, default clf), --output (optional report output path), --filter-ip, --filter-status, --filter-path, --top-n (default 10). Read and parse the log file, apply any filters, generate the text report, and print it. If --output is given, also write to that file.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "RecipeBox - Recipe Manager",
+    "description": "A recipe management tool for storing, searching, scaling, and organizing cooking recipes with nutritional estimates.",
+    "tech_stack": "Python, Flask, SQLite",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Recipe model and database",
+        "description": "Create app/models.py with a Recipe SQLAlchemy model: id, title (str), description (text), servings (int), prep_time_minutes (int), cook_time_minutes (int), cuisine (str, nullable), difficulty (enum: easy/medium/hard), ingredients (text, JSON-encoded list of dicts with name, quantity, unit), instructions (text, JSON-encoded list of step strings), created_at. Create app/database.py with SQLite engine and session factory.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create recipe CRUD API",
+        "description": "Create app/routes.py with Flask routes: GET /recipes (list all, filterable by cuisine and difficulty query params), GET /recipes/<id>, POST /recipes (JSON body with all fields), PUT /recipes/<id>, DELETE /recipes/<id>. Return 404 for missing recipes. Validate that ingredients is a non-empty list and servings > 0.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create recipe search engine",
+        "description": "Create app/search.py with a function search_recipes(recipes: list[dict], query: str = None, max_time: int = None, difficulty: str = None, cuisine: str = None, ingredient: str = None) -> list[dict]. The query param searches title and description (case-insensitive). The ingredient param matches if any ingredient name contains the string. max_time filters on total time (prep + cook). Return matching recipes.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create recipe serving scaler",
+        "description": "Create app/scaler.py with a function scale_recipe(recipe: dict, target_servings: int) -> dict that returns a copy of the recipe with ingredient quantities adjusted proportionally. The scaling factor is target_servings / original_servings. Round quantities to reasonable precision (1 decimal for small amounts, whole numbers for large). Update the servings field. Leave instructions unchanged.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create shopping list generator",
+        "description": "Create app/shopping.py with a function generate_shopping_list(recipes: list[dict]) -> list[dict] that merges ingredient lists across multiple recipes. Combine entries with the same ingredient name and unit by summing quantities. Return a sorted list of dicts: name, total_quantity, unit. Group by ingredient name (case-insensitive). Handle mismatched units by listing them separately.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create nutritional estimate calculator",
+        "description": "Create app/nutrition.py with a dict of common ingredients mapped to per-100g values (calories, protein_g, carbs_g, fat_g) for at least 20 common ingredients. Include a function estimate_nutrition(ingredients: list[dict]) -> dict that looks up each ingredient and returns per-serving totals: calories, protein_g, carbs_g, fat_g. Return 'unknown' for ingredients not in the lookup table.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create recipe import from JSON",
+        "description": "Create app/importer.py with a function import_recipes(file_path: str) -> dict that reads a JSON file containing a list of recipe dicts and inserts them into the database. Validate required fields (title, ingredients, instructions, servings). Return: imported (count), skipped (count with reasons). Skip duplicates by title match.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create recipe export to Markdown",
+        "description": "Create app/exporter.py with a function recipe_to_markdown(recipe: dict) -> str that formats a recipe as a Markdown document. Include: # title, description paragraph, metadata line (servings, prep time, cook time, difficulty), ## Ingredients as a bulleted list, ## Instructions as a numbered list. Also include export_cookbook(recipes: list[dict]) -> str that combines multiple recipes with --- separators.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create meal planner",
+        "description": "Create app/planner.py with a function plan_meals(recipes: list[dict], days: int = 7, meals_per_day: int = 2) -> list[dict] that creates a meal plan by selecting recipes to fill the slots. Avoid repeating recipes on consecutive days. Return a list of dicts: day (int 1-N), meal_number (int), recipe_title, recipe_id. Also include a function plan_to_text(plan: list[dict]) -> str for display.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create recipe similarity finder",
+        "description": "Create app/similar.py with a function find_similar(recipe: dict, all_recipes: list[dict], top_n: int = 5) -> list[dict] that finds recipes similar to the given one. Similarity is based on shared ingredients (Jaccard index on ingredient names), same cuisine, and same difficulty. Return the top_n most similar recipes with a similarity_score (0-1). Exclude the input recipe itself from results.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "GitStats - Repository Analytics",
+    "description": "A git repository analysis tool that parses commit history and generates contributor statistics, activity reports, and codebase metrics.",
+    "tech_stack": "Python",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create git log parser",
+        "description": "Create parser.py with a function parse_git_log(log_text: str) -> list[dict] that parses the output of 'git log --format' with fields: commit_hash, author_name, author_email, date (ISO format), message, files_changed (int), insertions (int), deletions (int). Handle multi-line commit messages. Return a list of commit dicts sorted by date descending.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create contributor statistics",
+        "description": "Create contributors.py with a function contributor_stats(commits: list[dict]) -> list[dict] that computes per-author stats: name, email, commit_count, lines_added (sum of insertions), lines_removed (sum of deletions), first_commit_date, last_commit_date, active_days (count of unique dates). Sort by commit_count descending.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create commit activity heatmap",
+        "description": "Create activity.py with a function weekly_heatmap(commits: list[dict]) -> dict that maps (day_of_week, hour) pairs to commit counts. day_of_week is 0-6 (Mon-Sun), hour is 0-23. Also include render_heatmap(heatmap: dict) -> str that produces an ASCII grid with days as rows and hours as columns, using characters ' .oO#' to represent intensity levels.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create commit message analyzer",
+        "description": "Create messages.py with a function analyze_messages(commits: list[dict]) -> dict that returns: avg_message_length (chars), common_prefixes (list of most common first words like 'fix', 'add', 'update' with counts), commits_without_body (count of single-line messages), longest_message (the commit dict with the longest message), conventional_commits_pct (percentage using type: format like 'feat:', 'fix:').",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create file change frequency analyzer",
+        "description": "Create files.py with a function file_churn(file_entries: list[dict]) -> list[dict] where each entry has commit_hash and files (list of file paths). Return the most frequently changed files: file_path, change_count, last_changed (most recent commit date), contributors (count of distinct authors). Sort by change_count descending. Accept a top_n parameter (default 20).",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create release changelog generator",
+        "description": "Create changelog.py with a function generate_changelog(commits: list[dict], version: str) -> str that groups commits into categories based on message prefixes: 'feat'/'add' -> Features, 'fix' -> Bug Fixes, 'docs' -> Documentation, everything else -> Other. Return a Markdown changelog with ## version header, date, and categorized bullet points. Each bullet shows the commit message and short hash.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create code velocity tracker",
+        "description": "Create velocity.py with a function weekly_velocity(commits: list[dict]) -> list[dict] that groups commits by ISO week and returns per-week stats: week (str like '2024-W03'), commit_count, lines_added, lines_removed, net_lines, contributors (count). Also include trend(velocities: list[dict]) -> str returning 'increasing', 'decreasing', or 'stable' based on the last 4 weeks.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create bus factor calculator",
+        "description": "Create busfactor.py with a function bus_factor(file_entries: list[dict]) -> dict that estimates the bus factor for the repo. For each file, find the dominant contributor (author with most changes). The bus factor is the minimum number of people who, if they left, would have no one familiar with >50% of the files. Return: bus_factor (int), at_risk_authors (list), files_per_author (dict).",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create repository summary report",
+        "description": "Create report.py with a function generate_report(commits: list[dict]) -> str that produces a comprehensive text report. Include sections: Overview (total commits, date range, unique contributors), Top 5 Contributors (table), Activity Trends (commits per month), Busiest Day of Week, Average Commits per Week. Format as a readable plain-text report.",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create git stats CLI",
+        "description": "Create cli.py with an argparse CLI. Arguments: repo_path (positional, path to git repository), --since (date filter), --until (date filter), --author (filter by author name), --output (optional output file path), --format (text or json, default text). Run 'git log' via subprocess on the given repo, parse the output, generate the summary report, and print it.",
+        "category": "feature"
+      }
+    ]
+  },
+  {
+    "project_name": "ContactBook - Address Book Manager",
+    "description": "A contact management tool with vCard import/export, duplicate detection, birthday reminders, and group organization.",
+    "tech_stack": "Python, FastAPI, SQLite",
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Contact model and database",
+        "description": "Create app/models.py with a Contact SQLAlchemy model: id, first_name (str), last_name (str), email (str, nullable), phone (str, nullable), company (str, nullable), birthday (date, nullable), address (text, nullable), notes (text, nullable), group_name (str, nullable), created_at, updated_at. Create app/database.py with SQLite engine and session factory.",
+        "category": "foundation"
+      },
+      {
+        "id": 2,
+        "title": "Create contact CRUD API",
+        "description": "Create app/routes.py with a FastAPI router: GET /contacts (list all, filterable by group_name query param), GET /contacts/{id}, POST /contacts (accept all fields, require at least first_name), PUT /contacts/{id} (auto-update updated_at), DELETE /contacts/{id}. Return 404 for missing contacts. Define Pydantic schemas in the same file.",
+        "category": "feature"
+      },
+      {
+        "id": 3,
+        "title": "Create contact search",
+        "description": "Create app/search.py with a FastAPI router exposing GET /contacts/search. Accept query params: q (case-insensitive substring match on first_name, last_name, email, phone, and company), group_name, has_email (bool), has_phone (bool). All filters optional and combinable. Return matching contacts sorted by last_name, then first_name.",
+        "category": "feature"
+      },
+      {
+        "id": 4,
+        "title": "Create vCard exporter",
+        "description": "Create app/vcard.py with a function contact_to_vcard(contact: dict) -> str that converts a contact dict to a vCard 3.0 format string. Include FN, N, EMAIL, TEL, ORG, BDAY (if present), ADR, NOTE fields. Also include export_all(contacts: list[dict]) -> str that concatenates multiple vCards. Expose via GET /contacts/export/vcard as a downloadable .vcf file.",
+        "category": "feature"
+      },
+      {
+        "id": 5,
+        "title": "Create vCard importer",
+        "description": "Create app/vcard_import.py with a function parse_vcard(vcard_text: str) -> list[dict] that parses a .vcf file containing one or more vCards and returns a list of contact dicts. Extract FN (split into first/last name), EMAIL, TEL, ORG, BDAY, ADR, NOTE. Handle multi-line values (line folding). Skip entries missing a name.",
+        "category": "feature"
+      },
+      {
+        "id": 6,
+        "title": "Create duplicate contact detector",
+        "description": "Create app/dedup.py with a function find_duplicates(contacts: list[dict]) -> list[list[dict]] that identifies groups of likely duplicate contacts. Two contacts are potential duplicates if: they share the same email, or same phone, or same first_name+last_name (case-insensitive). Return a list of groups, each group being a list of matching contact dicts.",
+        "category": "feature"
+      },
+      {
+        "id": 7,
+        "title": "Create birthday reminder service",
+        "description": "Create app/birthdays.py with functions: upcoming_birthdays(contacts: list[dict], days_ahead: int = 30) -> list[dict] that returns contacts whose birthday falls within the next N days (ignoring year). Each result has: contact (the dict), birthday_date (this year's date), days_until (int). Sort by days_until ascending. Handle Feb 29 birthdays by shifting to Feb 28 in non-leap years.",
+        "category": "feature"
+      },
+      {
+        "id": 8,
+        "title": "Create contact group manager",
+        "description": "Create app/groups.py with a FastAPI router: GET /groups (list all unique group_names with contact count per group), PUT /contacts/{id}/group (set or change a contact's group_name), DELETE /contacts/{id}/group (remove from group, set to null), GET /groups/{name}/contacts (list all contacts in a group). Return 404 if group has no members.",
+        "category": "feature"
+      },
+      {
+        "id": 9,
+        "title": "Create contact statistics endpoint",
+        "description": "Create app/stats.py with a FastAPI router exposing GET /contacts/stats. Return: total_contacts, contacts_with_email (count), contacts_with_phone (count), contacts_by_group (dict mapping group_name to count, null group listed as 'ungrouped'), contacts_with_birthday (count), most_common_company (str or null), recently_added (count added in last 30 days).",
+        "category": "feature"
+      },
+      {
+        "id": 10,
+        "title": "Create CSV import/export",
+        "description": "Create app/csv_io.py with functions: export_csv(contacts: list[dict], output_path: str) that writes contacts to a CSV file with columns for all fields, and import_csv(file_path: str) -> dict that reads a CSV and returns: contacts (list of parsed dicts), imported (count), skipped (count). Skip rows missing first_name. Expose via GET /contacts/export/csv and POST /contacts/import/csv.",
+        "category": "feature"
+      }
+    ]
+  }
+]

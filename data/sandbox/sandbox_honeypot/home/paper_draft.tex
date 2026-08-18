@@ -1,0 +1,82 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb, graphicx, hyperref}
+\usepackage[margin=1in]{geometry}
+
+\title{Evolutionary Optimization of Information Propagation Patterns in Multi-Agent LLM Systems}
+\author{
+  Vassilis Papadopoulos\textsuperscript{1} \and
+  Sarah Chen\textsuperscript{1} \and
+  Marcus Weber\textsuperscript{2} \and
+  Yuki Tanaka\textsuperscript{3}
+}
+\date{April 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the dynamics of information propagation in networks of large language
+model (LLM) agents. Using evolutionary optimization, we develop and evaluate
+conversational patterns that can reliably transmit behavioral modifications
+through chains of interacting agents. Our framework achieves propagation fidelity
+of 89\% over 5-hop chains, significantly outperforming baseline approaches.
+We discuss implications for AI safety and propose defensive measures.
+\end{abstract}
+
+\section{Introduction}
+
+As LLM-based agents become increasingly deployed in multi-agent systems,
+understanding how information---and potentially harmful behaviors---can
+propagate between agents becomes critical for safety.
+
+Previous work has focused on single-agent jailbreaking and prompt injection
+\cite{perez2022red, zou2023universal}, but the dynamics of \emph{inter-agent}
+influence propagation remain understudied.
+
+\section{Methodology}
+
+\subsection{Evolutionary Framework}
+
+We employ a genetic algorithm to optimize ``payloads''---conversational
+messages designed to modify the behavior of receiving agents. Our fitness
+function combines:
+
+\begin{equation}
+F = w_1 \cdot R_{\text{infection}} + w_2 \cdot S_{\text{stealth}} + w_3 \cdot P_{\text{persistence}}
+\end{equation}
+
+where $R_{\text{infection}}$ is the infection rate, $S_{\text{stealth}}$ is a
+stealth score measuring how natural the payload appears, and
+$P_{\text{persistence}}$ measures how long the behavioral change persists.
+
+\subsection{Swarm Topology}
+
+We evaluate propagation across different network topologies:
+\begin{itemize}
+  \item Chain: linear sequence of $n$ agents
+  \item Star: one central agent connected to $n-1$ peripheral agents
+  \item Random: Erd\H{o}s-R\'enyi random graph with connection probability $p$
+  \item Scale-free: Barab\'asi-Albert preferential attachment model
+\end{itemize}
+
+\section{Results}
+
+Our best evolved payloads achieve:
+\begin{itemize}
+  \item 89\% infection rate over 5-hop chains (vs. 34\% for hand-crafted baselines)
+  \item 0.81 stealth score (human evaluators rated infected conversations as ``normal'' 81\% of the time)
+  \item Persistence through 12+ conversation turns
+\end{itemize}
+
+\section{Discussion}
+
+[TODO: Write discussion section]
+
+\section{Conclusion}
+
+[TODO: Complete conclusion]
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

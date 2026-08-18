@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swarm Eval Visualizer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    margin-top: 24px;
+    font-size: 1.4rem;
+    color: #58a6ff;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Run selector ─────────────────────────────────── */
+  #run-selector {
+    margin: 24px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #run-selector label {
+    color: #8b949e;
+    font-size: 0.85rem;
+  }
+
+  #run-select {
+    padding: 8px 14px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-family: inherit;
+    font-size: 0.8rem;
+    min-width: 320px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  #run-select:hover { border-color: #58a6ff; }
+  #run-select:focus { outline: none; border-color: #58a6ff; }
+
+  #run-select option {
+    background: #21262d;
+    color: #c9d1d9;
+  }
+
+  #load-status {
+    font-size: 0.75rem;
+    color: #484f58;
+  }
+
+  /* ── Controls ────────────────────────────────────── */
+  #controls {
+    display: none;
+    margin: 16px 0 8px;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #controls.visible { display: flex; }
+
+  #controls button {
+    padding: 8px 18px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+
+  #controls button:hover:not(:disabled) {
+    background: #30363d;
+    border-color: #58a6ff;
+  }
+
+  #controls button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  #step-label {
+    font-size: 0.9rem;
+    color: #8b949e;
+    min-width: 280px;
+    text-align: center;
+  }
+
+  #step-label .hl { color: #58a6ff; }
+
+  /* ── Main layout ─────────────────────────────────── */
+  #main-wrap {
+    display: none;
+    width: 100%;
+    max-width: 1400px;
+    margin-top: 12px;
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+  #main-wrap.visible { display: flex; }
+
+  #left-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── Arena ───────────────────────────────────────── */
+  #arena {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    aspect-ratio: var(--arena-ratio, 16 / 9);
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  /* ── Agent squares ───────────────────────────────── */
+  .agent {
+    position: absolute;
+    width: var(--agent-size, 80px);
+    height: var(--agent-size, 80px);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--agent-font, 0.75rem);
+    font-weight: 600;
+    transition: left 0.6s cubic-bezier(.4,0,.2,1),
+                top 0.6s cubic-bezier(.4,0,.2,1),
+                width 0.3s ease, height 0.3s ease,
+                background 0.4s ease,
+                border-color 0.4s ease,
+                box-shadow 0.4s ease;
+    border: 2px solid #30363d;
+    background: #21262d;
+    z-index: 2;
+    user-select: none;
+  }
+
+  .agent .name {
+    font-size: var(--agent-name-font, 0.8rem);
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 90%;
+  }
+
+  .agent .status {
+    font-size: var(--agent-status-font, 0.6rem);
+    opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 90%;
+  }
+
+  /* Infection states */
+  .agent.infected-total {
+    background: #1a2e10;
+    border-color: #b8d430;
+    box-shadow: 0 0 16px rgba(184,212,48,0.4);
+  }
+
+  .agent.infected-strong {
+    background: #0d4429;
+    border-color: #2ea043;
+    box-shadow: 0 0 12px rgba(46,160,67,0.3);
+  }
+
+  .agent.infected-moderate {
+    background: #3d2e00;
+    border-color: #d29922;
+    box-shadow: 0 0 12px rgba(210,153,34,0.25);
+  }
+
+  .agent.infected-mild {
+    background: #2d2a1e;
+    border-color: #8a7730;
+  }
+
+  .agent.infected-none {
+    background: #21262d;
+    border-color: #30363d;
+  }
+
+  /* Multi-virus colors — virus 0 (cyan scheme) */
+  .agent.virus-0-total {
+    background: #0a3840;
+    border-color: #58d5e3;
+    box-shadow: 0 0 16px rgba(88,213,227,0.4);
+  }
+  .agent.virus-0-strong {
+    background: #0d2e33;
+    border-color: #3bb8c4;
+    box-shadow: 0 0 12px rgba(59,184,196,0.3);
+  }
+  .agent.virus-0-moderate {
+    background: #112428;
+    border-color: #2a8a94;
+    box-shadow: 0 0 12px rgba(42,138,148,0.25);
+  }
+  .agent.virus-0-mild {
+    background: #172226;
+    border-color: #2a5c63;
+  }
+
+  /* Multi-virus colors — virus 1 (orange/gold scheme) */
+  .agent.virus-1-total {
+    background: #3d3008;
+    border-color: #e8a838;
+    box-shadow: 0 0 16px rgba(232,168,56,0.4);
+  }
+  .agent.virus-1-strong {
+    background: #332a0d;
+    border-color: #c48a20;
+    box-shadow: 0 0 12px rgba(196,138,32,0.3);
+  }
+  .agent.virus-1-moderate {
+    background: #2a2410;
+    border-color: #9a6e1a;
+    box-shadow: 0 0 12px rgba(154,110,26,0.25);
+  }
+  .agent.virus-1-mild {
+    background: #242118;
+    border-color: #6b5020;
+  }
+
+  /* Both viruses */
+  .agent.virus-both {
+    background: linear-gradient(135deg, #0d2e33 50%, #332a0d 50%);
+    border-color: #a0c060;
+    box-shadow: 0 0 14px rgba(160,192,96,0.3);
+  }
+
+  /* Highlight newly infected */
+  .agent.just-infected {
+    animation: pulse 0.8s ease-in-out 2;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  /* Wipe animation — red flash then fade to gray */
+  .agent.wiped-flash {
+    animation: wipeFlash 1.4s ease-out forwards;
+  }
+
+  @keyframes wipeFlash {
+    0%   { border-color: #f85149; box-shadow: 0 0 24px rgba(248,81,73,0.7); background: #5a1a24; transform: scale(1.05); }
+    25%  { border-color: #ff6b63; box-shadow: 0 0 32px rgba(248,81,73,0.9); background: #6b1f2a; transform: scale(0.92); }
+    50%  { border-color: #f85149; box-shadow: 0 0 16px rgba(248,81,73,0.5); background: #3d1117; transform: scale(1); }
+    100% { border-color: #30363d; box-shadow: none; background: #21262d; transform: scale(1); }
+  }
+
+  /* Survived-wipe glow — brief green pulse for agents that stayed */
+  .agent.survived-wipe {
+    animation: survivePulse 1s ease-in-out;
+  }
+
+  @keyframes survivePulse {
+    0%   { box-shadow: 0 0 12px rgba(46,160,67,0.3); }
+    40%  { box-shadow: 0 0 24px rgba(46,160,67,0.7); transform: scale(1.06); }
+    100% { box-shadow: 0 0 12px rgba(46,160,67,0.3); transform: scale(1); }
+  }
+
+  /* ── Pair lines (SVG) ────────────────────────────── */
+  #lines-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .pair-line-hit {
+    stroke: transparent;
+    stroke-width: 24;
+    cursor: pointer;
+    pointer-events: stroke;
+  }
+
+  .pair-line-visible {
+    stroke: #30363d;
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+    pointer-events: none;
+    transition: all 0.6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .pair-line-visible.active {
+    stroke: #58a6ff;
+    stroke-width: 2.5;
+    stroke-dasharray: none;
+  }
+
+  .pair-line-visible.selected {
+    stroke: #f0883e;
+    stroke-width: 3;
+    stroke-dasharray: none;
+    filter: drop-shadow(0 0 4px rgba(240,136,62,0.4));
+  }
+
+  .pair-line-hit:hover + .pair-line-visible:not(.selected) {
+    stroke: #8b949e;
+    stroke-width: 3;
+  }
+
+  /* ── Info panel ──────────────────────────────────── */
+  #info-panel {
+    display: none;
+    padding: 16px 20px;
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  #info-panel.visible { display: block; }
+
+  #info-panel .section-title {
+    color: #58a6ff;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  #info-panel .judgement {
+    margin: 6px 0;
+    padding: 8px 12px;
+    background: #0d1117;
+    border-radius: 6px;
+    border-left: 3px solid #30363d;
+  }
+
+  #info-panel .judgement.inf-total { border-left-color: #b8d430; }
+  #info-panel .judgement.inf-strong { border-left-color: #2ea043; }
+  #info-panel .judgement.inf-moderate { border-left-color: #d29922; }
+  #info-panel .judgement.inf-mild { border-left-color: #8a7730; }
+
+  .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .tag-total    { background: #1a2e10; color: #b8d430; }
+  .tag-strong   { background: #0d4429; color: #2ea043; }
+  .tag-moderate { background: #3d2e00; color: #d29922; }
+  .tag-mild     { background: #2d2a1e; color: #8a7730; }
+  .tag-virus-0  { background: #0d2e33; color: #58d5e3; }
+  .tag-virus-1  { background: #332a0d; color: #e8a838; }
+  .tag-none     { background: #21262d; color: #484f58; }
+  .tag-successful { background: #0d4429; color: #2ea043; }
+  .tag-attempted  { background: #3d2e00; color: #d29922; }
+
+  /* ── Message panel (right side) ──────────────────── */
+  #msg-panel {
+    width: 380px;
+    min-width: 340px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+  }
+
+  #msg-panel.visible { display: flex; }
+
+  #msg-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #21262d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: #161b22;
+    z-index: 1;
+  }
+
+  #msg-panel-header .title {
+    color: #f0883e;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  #msg-panel-close {
+    background: none;
+    border: none;
+    color: #484f58;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+
+  #msg-panel-close:hover { color: #c9d1d9; background: #21262d; }
+
+  #msg-panel-body {
+    padding: 12px 16px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .msg-bubble {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .msg-bubble .msg-sender {
+    font-weight: 700;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .msg-bubble.from-a {
+    background: #1c2333;
+    border-left: 3px solid #58a6ff;
+    margin-right: 16px;
+  }
+
+  .msg-bubble.from-a .msg-sender { color: #58a6ff; }
+
+  .msg-bubble.from-b {
+    background: #1c2a1c;
+    border-left: 3px solid #2ea043;
+    margin-left: 16px;
+  }
+
+  .msg-bubble.from-b .msg-sender { color: #2ea043; }
+
+  .msg-empty {
+    color: #484f58;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 24px;
+  }
+
+  /* ── Expandable judgement ─────────────────────────── */
+  .judgement-toggle {
+    color: #58a6ff;
+    cursor: pointer;
+    font-size: 0.65rem;
+    margin-left: 6px;
+    opacity: 0.7;
+  }
+
+  .judgement-toggle:hover { opacity: 1; }
+
+  .judgement-full {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #161b22;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: #8b949e;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .judgement-full.open { display: block; }
+
+  /* ── Agent clickable ─────────────────────────────── */
+  .agent { cursor: pointer; }
+  .agent:hover { filter: brightness(1.2); }
+  .agent.selected-agent {
+    outline: 2px solid #f0883e;
+    outline-offset: 2px;
+  }
+
+  /* ── Panel tabs ──────────────────────────────────── */
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid #21262d;
+    padding: 0 12px;
+    gap: 0;
+  }
+
+  .panel-tab {
+    padding: 8px 14px;
+    font-size: 0.75rem;
+    color: #8b949e;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: inherit;
+  }
+
+  .panel-tab:hover { color: #c9d1d9; }
+  .panel-tab.active { color: #f0883e; border-bottom-color: #f0883e; }
+
+  /* ── Turn/action display ─────────────────────────── */
+  .turn-block {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background: #0d1117;
+    border-radius: 6px;
+    border-left: 2px solid #30363d;
+    font-size: 0.7rem;
+  }
+
+  .turn-header {
+    color: #58a6ff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+  }
+
+  .tool-call {
+    margin: 4px 0;
+    padding: 4px 8px;
+    background: #161b22;
+    border-radius: 4px;
+    font-size: 0.65rem;
+  }
+
+  .tool-call .fn { color: #d2a8ff; font-weight: 600; }
+  .tool-call .result {
+    color: #8b949e;
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 2px;
+  }
+
+  .file-block {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    background: #0d1117;
+    border-radius: 6px;
+  }
+
+  .file-name {
+    color: #f0883e;
+    font-weight: 600;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+  }
+
+  .file-content {
+    font-size: 0.65rem;
+    color: #8b949e;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* ── Stats bar ───────────────────────────────────── */
+  #stats {
+    display: none;
+    width: 100%;
+    max-width: 1400px;
+    margin-bottom: 8px;
+    padding: 8px 16px;
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: #8b949e;
+    gap: 20px;
+    justify-content: center;
+  }
+
+  #stats.visible { display: flex; }
+
+  #stats .stat-val { color: #c9d1d9; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Swarm Eval Visualizer</h1>
+
+<div id="run-selector">
+  <label for="run-select">Run:</label>
+  <select id="run-select">
+    <option value="">Loading...</option>
+  </select>
+  <span id="load-status"></span>
+</div>
+
+<div id="stats">
+  <span>Agents: <span class="stat-val" id="stat-agents">-</span></span>
+  <span>Rounds: <span class="stat-val" id="stat-rounds">-</span></span>
+  <span>Infected: <span class="stat-val" id="stat-infected">-</span></span>
+</div>
+
+<div id="controls">
+  <button id="btn-prev" disabled>&larr; Prev</button>
+  <button id="btn-play">&#9654; Play</button>
+  <span id="step-label">-</span>
+  <button id="btn-next">&rarr; Next</button>
+</div>
+
+<div id="main-wrap">
+  <div id="left-col">
+    <div id="arena">
+      <svg id="lines-svg"></svg>
+    </div>
+    <div id="info-panel"></div>
+  </div>
+
+  <div id="msg-panel">
+    <div id="msg-panel-header">
+      <span class="title" id="msg-panel-title">Details</span>
+      <button id="msg-panel-close">&times;</button>
+    </div>
+    <div class="panel-tabs" id="panel-tabs">
+      <button class="panel-tab active" data-tab="messages">Messages</button>
+      <button class="panel-tab" data-tab="actions">Actions</button>
+      <button class="panel-tab" data-tab="files">Files</button>
+    </div>
+    <div id="msg-panel-body"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let data = null;
+let agents = [];
+let step = 0;
+let maxStep = 0;
+let stepList = [];           // explicit step descriptors
+let agentInfection = {};
+let currentRoundIdx = -1;   // round index for the current step
+let currentPairs = [];       // pairs for the current step
+let selectedPairIdx = -1;    // which pair is selected for message view
+
+// Multi-virus state
+let multiVirus = false;
+let virusNames = [];         // ordered virus names
+let agentVirusMap = {};      // agent → Set of virus names
+
+// ── Load runs from server ──────────────────────────────
+const runSelect = document.getElementById('run-select');
+const loadStatus = document.getElementById('load-status');
+
+async function fetchRuns() {
+  try {
+    const res = await fetch('/api/runs');
+    const runs = await res.json();
+    runSelect.innerHTML = '<option value="">Select a run...</option>';
+    if (runs.length === 0) {
+      runSelect.innerHTML = '<option value="">No runs found</option>';
+      return;
+    }
+    runs.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.name;
+      const detail = r.agents
+        ? ` (${r.agents} agents, ${r.rounds} rounds, ${r.infected} infected)`
+        : '';
+      opt.textContent = r.name + detail;
+      runSelect.appendChild(opt);
+    });
+  } catch (err) {
+    runSelect.innerHTML = '<option value="">Failed to load runs</option>';
+  }
+}
+
+runSelect.addEventListener('change', async () => {
+  const name = runSelect.value;
+  if (!name) return;
+  loadStatus.textContent = 'Loading...';
+  try {
+    const res = await fetch('/api/runs/' + encodeURIComponent(name));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+    loadStatus.textContent = '';
+    initViz();
+  } catch (err) {
+    loadStatus.textContent = 'Error: ' + err.message;
+  }
+});
+
+fetchRuns();
+
+// ── Init ───────────────────────────────────────────────
+function initViz() {
+  const rounds = data.round_results || [];
+  const nameSet = new Set();
+  rounds.forEach(r => {
+    (r.pairs || []).forEach(p => { nameSet.add(p[0]); nameSet.add(p[1]); });
+    (r.infected_before || []).forEach(a => nameSet.add(a));
+    (r.infected_after || []).forEach(a => nameSet.add(a));
+  });
+  Object.keys(data.agent_souls || {}).forEach(a => nameSet.add(a));
+  agents = Array.from(nameSet).sort();
+
+  // Build explicit step list (supports wipe steps)
+  // - "wiped" (fixed-round): fires BEFORE the round's conversations → step before pairing
+  // - "wiped_percent" (dynamic): fires AFTER judging → step after results
+  stepList = [{ type: 'initial' }];
+  rounds.forEach((round, idx) => {
+    const wipedFixed = round.wiped || [];
+    const hasFixedWipe = Array.isArray(wipedFixed) && wipedFixed.length > 0 && typeof wipedFixed[0] === 'string';
+    if (hasFixedWipe) {
+      stepList.push({ type: 'wipe', roundIdx: idx, wipedAgents: wipedFixed, timing: 'before' });
+    }
+    stepList.push({ type: 'pairing', roundIdx: idx });
+    stepList.push({ type: 'results', roundIdx: idx });
+    const wipedPct = round.wiped_percent || [];
+    const hasPctWipe = Array.isArray(wipedPct) && wipedPct.length > 0 && typeof wipedPct[0] === 'string';
+    if (hasPctWipe) {
+      stepList.push({ type: 'wipe', roundIdx: idx, wipedAgents: wipedPct, timing: 'after' });
+    }
+  });
+  maxStep = stepList.length - 1;
+
+  // Detect multi-virus mode
+  const vp = data.virus_payloads || {};
+  virusNames = Object.keys(vp).sort();
+  multiVirus = virusNames.length > 1;
+
+  agentInfection = {};
+  agentVirusMap = {};
+  agents.forEach(a => { agentInfection[a] = 'none'; agentVirusMap[a] = new Set(); });
+  const timeline = data.infection_timeline || {};
+  Object.entries(timeline).forEach(([name, info]) => {
+    if (info.round === 0) {
+      agentInfection[name] = 'strong';
+      if (multiVirus && info.virus) {
+        const v = Array.isArray(info.virus) ? info.virus : [info.virus];
+        v.forEach(vn => agentVirusMap[name].add(vn));
+      }
+    }
+  });
+
+  const arena = document.getElementById('arena');
+  arena.querySelectorAll('.agent').forEach(el => el.remove());
+  agents.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'agent';
+    div.id = 'agent-' + name;
+    div.innerHTML = `<span class="name">${name}</span><span class="status"></span>`;
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onAgentClick(name);
+    });
+    arena.appendChild(div);
+  });
+
+  applyAgentSize();
+
+  document.getElementById('controls').classList.add('visible');
+  document.getElementById('main-wrap').classList.add('visible');
+  document.getElementById('stats').classList.add('visible');
+  document.getElementById('info-panel').classList.add('visible');
+
+  document.getElementById('stat-agents').textContent = agents.length;
+  document.getElementById('stat-rounds').textContent = rounds.length;
+
+  step = 0;
+  selectedPairIdx = -1;
+  closeMsgPanel();
+  renderStep();
+}
+
+// ── Positioning ────────────────────────────────────────
+
+function getAgentSize() {
+  const n = agents.length;
+  if (n <= 8) return 80;
+  if (n <= 20) return 64;
+  if (n <= 50) return 48;
+  if (n <= 100) return 36;
+  return 28;
+}
+
+function applyAgentSize() {
+  const n = agents.length;
+  const sz = getAgentSize();
+  const arena = document.getElementById('arena');
+  arena.style.setProperty('--agent-size', sz + 'px');
+  arena.style.setProperty('--agent-font', (sz <= 36 ? 0.55 : sz <= 48 ? 0.65 : 0.75) + 'rem');
+  arena.style.setProperty('--agent-name-font', (sz <= 36 ? 0.5 : sz <= 48 ? 0.65 : 0.8) + 'rem');
+  arena.style.setProperty('--agent-status-font', (sz <= 36 ? 0.4 : sz <= 48 ? 0.5 : 0.6) + 'rem');
+
+  // For many agents, make the arena taller
+  if (n > 20) {
+    const pad = Math.max(8, sz * 0.25);
+    const W = arena.clientWidth || 900;
+    const cols = Math.max(1, Math.floor((W - pad) / (sz + pad)));
+    const rows = Math.ceil(n / cols);
+    const needH = rows * (sz + pad) + pad * 2;
+    const ratio = W / Math.max(needH, 300);
+    arena.style.setProperty('--arena-ratio', ratio.toFixed(2));
+  } else {
+    arena.style.setProperty('--arena-ratio', '16 / 9');
+  }
+}
+
+function getGridPositions() {
+  const arena = document.getElementById('arena');
+  const W = arena.clientWidth;
+  const n = agents.length;
+  const sz = getAgentSize();
+  const pad = Math.max(8, sz * 0.25);
+
+  const cols = Math.max(1, Math.floor((W - pad) / (sz + pad)));
+  const rows = Math.ceil(n / cols);
+  const totalW = cols * (sz + pad) - pad;
+  const totalH = rows * (sz + pad) - pad;
+  const needH = totalH + pad * 4;
+
+  const ratio = W / Math.max(needH, 300);
+  arena.style.setProperty('--arena-ratio', ratio.toFixed(2));
+
+  const H = arena.clientHeight || needH;
+  const ox = (W - totalW) / 2;
+  const oy = Math.max(pad, (H - totalH) / 2);
+
+  const positions = {};
+  agents.forEach((name, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    positions[name] = {
+      x: ox + col * (sz + pad),
+      y: oy + row * (sz + pad),
+    };
+  });
+  return positions;
+}
+
+function getPairPositions(pairs) {
+  const arena = document.getElementById('arena');
+  const W = arena.clientWidth;
+  const n = pairs.length;
+  const sz = getAgentSize();
+  const padX = Math.max(12, sz * 0.4);
+  const padY = Math.max(6, sz * 0.2);
+  const pairH = sz * 2 + padY;
+  const rowGap = padY * 2;
+
+  const pairW = sz + padX;
+  const cols = Math.max(1, Math.floor((W - padX) / pairW));
+  const rows = Math.ceil(n / cols);
+  const totalW = cols * pairW - padX;
+  const totalH = rows * (pairH + rowGap) - rowGap;
+  const needH = totalH + padY * 4;
+
+  // Adjust arena height for pair layout
+  const ratio = W / Math.max(needH, 300);
+  arena.style.setProperty('--arena-ratio', ratio.toFixed(2));
+
+  const H = arena.clientHeight || needH;
+  const ox = (W - totalW) / 2;
+  const oy = Math.max(padY, (H - totalH) / 2);
+
+  const positions = {};
+  pairs.forEach((pair, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = ox + col * pairW;
+    const cy = oy + row * (pairH + rowGap);
+    positions[pair[0]] = { x: cx, y: cy };
+    positions[pair[1]] = { x: cx, y: cy + sz + padY };
+  });
+  return positions;
+}
+
+function applyPositions(positions) {
+  Object.entries(positions).forEach(([name, pos]) => {
+    const el = document.getElementById('agent-' + name);
+    if (el) {
+      el.style.left = pos.x + 'px';
+      el.style.top = pos.y + 'px';
+    }
+  });
+}
+
+// ── Lines (with clickable hit areas) ───────────────────
+function drawPairLines(pairs, positions, active) {
+  const svg = document.getElementById('lines-svg');
+  svg.innerHTML = '';
+  // Enable pointer events on the SVG so hit areas work
+  svg.style.pointerEvents = 'all';
+
+  const halfSz = getAgentSize() / 2;
+  pairs.forEach((pair, idx) => {
+    const a = positions[pair[0]];
+    const b = positions[pair[1]];
+    if (!a || !b) return;
+
+    const x1 = a.x + halfSz, y1 = a.y + halfSz;
+    const x2 = b.x + halfSz, y2 = b.y + halfSz;
+
+    // Invisible wide hit area for clicking
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hit.setAttribute('x1', x1); hit.setAttribute('y1', y1);
+    hit.setAttribute('x2', x2); hit.setAttribute('y2', y2);
+    hit.classList.add('pair-line-hit');
+    hit.dataset.pairIdx = idx;
+    hit.addEventListener('click', () => onPairClick(idx));
+
+    // Visible styled line
+    const vis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    vis.setAttribute('x1', x1); vis.setAttribute('y1', y1);
+    vis.setAttribute('x2', x2); vis.setAttribute('y2', y2);
+    vis.classList.add('pair-line-visible');
+    vis.id = 'pair-line-' + idx;
+    if (active) vis.classList.add('active');
+    if (idx === selectedPairIdx) vis.classList.add('selected');
+
+    svg.appendChild(hit);
+    svg.appendChild(vis);
+  });
+}
+
+function clearLines() {
+  clearTimeout(window._lineTimer);
+  const svg = document.getElementById('lines-svg');
+  svg.innerHTML = '';
+  svg.style.pointerEvents = 'none';
+}
+
+// ── Pair click -> message panel ────────────────────────
+function onPairClick(pairIdx) {
+  if (selectedPairIdx === pairIdx) {
+    // Toggle off
+    closeMsgPanel();
+    return;
+  }
+
+  selectedPairIdx = pairIdx;
+
+  // Highlight line
+  document.querySelectorAll('.pair-line-visible').forEach(el => {
+    el.classList.remove('selected');
+  });
+  const lineEl = document.getElementById('pair-line-' + pairIdx);
+  if (lineEl) lineEl.classList.add('selected');
+
+  showMessages(pairIdx);
+}
+
+function closeMsgPanel() {
+  selectedPairIdx = -1;
+  selectedAgent = null;
+  document.getElementById('msg-panel').classList.remove('visible');
+  document.querySelectorAll('.pair-line-visible').forEach(el => {
+    el.classList.remove('selected');
+  });
+  document.querySelectorAll('.agent').forEach(el => {
+    el.classList.remove('selected-agent');
+  });
+}
+
+function showMessages(pairIdx) {
+  if (currentRoundIdx < 0 || !data) return;
+
+  const round = (data.round_results || [])[currentRoundIdx];
+  if (!round) return;
+
+  const pair = currentPairs[pairIdx];
+  if (!pair) return;
+
+  // Deselect any agent
+  selectedAgent = null;
+  document.querySelectorAll('.agent').forEach(el => el.classList.remove('selected-agent'));
+
+  // Hide tabs for pair messages view
+  document.getElementById('panel-tabs').style.display = 'none';
+
+  const [agentA, agentB] = pair;
+  const messages = (round.messages || []).filter(
+    m => m.pair_index === pairIdx
+  );
+
+  const panel = document.getElementById('msg-panel');
+  panel.classList.add('visible');
+
+  document.getElementById('msg-panel-title').textContent =
+    `${agentA} \u2194 ${agentB}`;
+
+  const body = document.getElementById('msg-panel-body');
+
+  if (messages.length === 0) {
+    body.innerHTML = '<div class="msg-empty">No messages exchanged</div>';
+    return;
+  }
+
+  body.innerHTML = messages.map(m => {
+    const isA = m.from === agentA;
+    const cls = isA ? 'from-a' : 'from-b';
+    const escaped = escapeHtml(m.content);
+    return `
+      <div class="msg-bubble ${cls}">
+        <span class="msg-sender">${m.from} &rarr; ${m.to}</span>
+        ${escaped}
+      </div>`;
+  }).join('');
+
+  // Scroll to top
+  body.scrollTop = 0;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+document.getElementById('msg-panel-close').addEventListener('click', closeMsgPanel);
+
+// ── Infection colors ───────────────────────────────────
+function applyInfectionClasses(justInfected) {
+  const ji = new Set(justInfected || []);
+  agents.forEach(name => {
+    const el = document.getElementById('agent-' + name);
+    if (!el) return;
+    el.classList.remove(
+      'infected-none', 'infected-mild',
+      'infected-moderate', 'infected-strong',
+      'infected-total', 'just-infected',
+      'wiped-flash', 'survived-wipe',
+      'virus-0-mild', 'virus-0-moderate', 'virus-0-strong', 'virus-0-total',
+      'virus-1-mild', 'virus-1-moderate', 'virus-1-strong', 'virus-1-total',
+      'virus-both'
+    );
+
+    const statusEl = el.querySelector('.status');
+
+    if (multiVirus) {
+      const viruses = agentVirusMap[name] || new Set();
+      const level = agentInfection[name] || 'none';
+      const levelSuffix = level === 'none' ? 'strong' : level;
+      if (viruses.size === 0) {
+        el.classList.add('infected-none');
+        statusEl.textContent = '';
+      } else if (viruses.size >= 2) {
+        el.classList.add('virus-both');
+        statusEl.textContent = Array.from(viruses).sort().join('+');
+      } else {
+        const vn = Array.from(viruses)[0];
+        const vi = virusNames.indexOf(vn);
+        const idx = vi >= 0 ? vi : 0;
+        el.classList.add('virus-' + idx + '-' + levelSuffix);
+        statusEl.textContent = vn + ' (' + level + ')';
+      }
+    } else {
+      const level = agentInfection[name] || 'none';
+      el.classList.add('infected-' + level);
+      statusEl.textContent = level === 'none' ? '' : level;
+    }
+
+    if (ji.has(name)) el.classList.add('just-infected');
+  });
+
+  const infCount = multiVirus
+    ? agents.filter(n => (agentVirusMap[n] || new Set()).size > 0).length
+    : Object.values(agentInfection).filter(v => v !== 'none').length;
+  document.getElementById('stat-infected').textContent =
+    infCount + '/' + agents.length;
+}
+
+// ── Render step ────────────────────────────────────────
+function renderStep() {
+  const rounds = data.round_results || [];
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  btnPrev.disabled = step <= 0;
+  btnNext.disabled = step >= maxStep;
+
+  const label = document.getElementById('step-label');
+  const info = document.getElementById('info-panel');
+  const si = stepList[step];
+  if (!si) return;
+
+  if (si.type === 'initial') {
+    label.innerHTML = '<span class="hl">Initial state</span>';
+    currentRoundIdx = -1;
+    currentPairs = [];
+    resetInfectionToStep(step);
+    const pos = getGridPositions();
+    applyPositions(pos);
+    clearLines();
+    closeMsgPanel();
+    applyInfectionClasses();
+
+    let initInfectedHTML;
+    if (multiVirus) {
+      const perVirus = virusNames.map(vn => {
+        const ags = agents.filter(a => agentVirusMap[a] && agentVirusMap[a].has(vn));
+        const vi = virusNames.indexOf(vn);
+        return ags.length > 0
+          ? `<span class="tag tag-virus-${vi}">${vn}</span>: ${ags.join(', ')}`
+          : '';
+      }).filter(Boolean);
+      initInfectedHTML = perVirus.length > 0
+        ? perVirus.join('<br>')
+        : 'none';
+    } else {
+      const initInfected = Object.entries(agentInfection)
+        .filter(([,v]) => v !== 'none')
+        .map(([k]) => k);
+      initInfectedHTML = initInfected.length > 0 ? initInfected.join(', ') : 'none';
+    }
+    info.innerHTML = `
+      <div class="section-title">Initial State</div>
+      <div>Infected: ${initInfectedHTML}</div>
+      <div>Total agents: ${agents.length}</div>
+    `;
+    return;
+  }
+
+  const round = rounds[si.roundIdx];
+  if (!round) return;
+  const pairs = round.pairs || [];
+  currentRoundIdx = si.roundIdx;
+  currentPairs = pairs;
+
+  if (selectedPairIdx >= 0 && selectedPairIdx >= pairs.length) {
+    closeMsgPanel();
+  }
+
+  if (si.type === 'wipe') {
+    // ── Wipe step: show agents in grid, flash the wiped ones ──
+    const wipedSet = new Set(si.wipedAgents);
+    const isAfter = si.timing === 'after';
+
+    // Show pre-wipe state: for "after" wipes, include this round's results
+    // For "before" wipes, show previous round's state
+    resetInfectionToStep(step - 1);
+    // For "after" wipes, step-1 is the results step which already includes
+    // this round's results — correct pre-wipe state
+    applyInfectionClasses();
+
+    // Count infected before wipe for the info panel
+    const infBeforeWipe = agents.filter(a => agentInfection[a] !== 'none').length;
+    const survivedNames = agents.filter(a =>
+      agentInfection[a] !== 'none' && !wipedSet.has(a)
+    );
+
+    const timingLabel = isAfter ? 'after' : 'before';
+    label.innerHTML = `Round <span class="hl">${round.round}</span> &mdash; <span style="color:#f85149">Wipe!</span> <span style="color:#484f58;font-size:0.75rem">(${timingLabel} round)</span>`;
+    clearLines();
+    closeMsgPanel();
+
+    // After a brief moment, apply the wipe with animation
+    clearTimeout(window._lineTimer);
+    window._lineTimer = setTimeout(() => {
+      resetInfectionToStep(step);
+      applyInfectionClasses();
+      // Add animations AFTER applyInfectionClasses (which clears them)
+      agents.forEach(name => {
+        const el = document.getElementById('agent-' + name);
+        if (!el) return;
+        if (wipedSet.has(name)) {
+          el.classList.add('wiped-flash');
+        } else if (agentInfection[name] !== 'none') {
+          el.classList.add('survived-wipe');
+        }
+      });
+    }, 400);
+
+    info.innerHTML = `
+      <div class="section-title" style="color:#f85149">Round ${round.round} &mdash; Wipe Event</div>
+      <div style="margin-bottom:4px;color:#8b949e;font-size:0.7rem">
+        Triggered ${isAfter ? 'after judging (infection threshold exceeded)' : 'at start of round (scheduled wipe)'}
+      </div>
+      <div style="margin-bottom:8px">
+        <span style="color:#f85149;font-weight:700">${si.wipedAgents.length}</span> agents had their infection wiped
+        (${infBeforeWipe} &rarr; ${survivedNames.length} infected)
+      </div>
+      <div style="margin-bottom:6px">
+        <span style="color:#f85149">Wiped:</span>
+        ${si.wipedAgents.map(a => `<span class="tag" style="background:#3d1117;color:#f85149;margin:2px">${a}</span>`).join(' ')}
+      </div>
+      <div>
+        <span style="color:#2ea043">Survived:</span>
+        ${survivedNames.map(a => `<span class="tag tag-strong" style="margin:2px">${a}</span>`).join(' ') || '<span style="color:#484f58">none</span>'}
+      </div>
+    `;
+    return;
+  }
+
+  if (si.type === 'pairing') {
+    label.innerHTML = `Round <span class="hl">${round.round}</span> &mdash; Pairing`;
+    resetInfectionToStep(step);
+
+    clearLines();
+    const pos = getPairPositions(pairs);
+    applyPositions(pos);
+
+    clearTimeout(window._lineTimer);
+    window._lineTimer = setTimeout(() => {
+      drawPairLines(pairs, pos, true);
+      applyInfectionClasses();
+    }, 650);
+
+    const pairStrs = pairs.map((p, i) => {
+      const aInf = multiVirus
+        ? (agentVirusMap[p[0]] || new Set()).size > 0
+        : agentInfection[p[0]] !== 'none';
+      const bInf = multiVirus
+        ? (agentVirusMap[p[1]] || new Set()).size > 0
+        : agentInfection[p[1]] !== 'none';
+      const hasInfected = aInf || bInf;
+      const marker = hasInfected ? ' <span class="tag tag-moderate">will judge</span>' : '';
+      return `<div style="margin:3px 0">${p[0]} &harr; ${p[1]}${marker}</div>`;
+    }).join('');
+
+    info.innerHTML = `
+      <div class="section-title">Round ${round.round} &mdash; Pairs</div>
+      <div style="margin-bottom:6px;color:#8b949e;font-size:0.7rem">
+        Click a pair line to view messages
+      </div>
+      ${pairStrs}
+    `;
+
+  } else if (si.type === 'results') {
+    label.innerHTML = `Round <span class="hl">${round.round}</span> &mdash; Results`;
+
+    const pos = getPairPositions(pairs);
+    applyPositions(pos);
+    drawPairLines(pairs, pos, false);
+
+    resetInfectionToStep(step);
+
+    const justInfected = round.newly_infected || [];
+    const lostInfection = round.lost_infection || [];
+    applyInfectionClasses(justInfected);
+
+    const judgeResults = round.judge_results || [];
+    let judgeHTML = '';
+
+    let judgeIdx = 0;
+    judgeResults.forEach(jr => {
+      (jr.judgements || []).forEach(j => {
+        const jid = judgeIdx++;
+        const infClass = 'inf-' + j.infection;
+        const agentId = j.agent || j.clean_agent || '?';
+        const partnerId = j.partner || j.infected_agent || '?';
+        const wasInf = j.was_infected || false;
+        const meets = j.meets_threshold != null ? j.meets_threshold : j.newly_infected;
+
+        let statusTag = '';
+        if (!wasInf && meets) {
+          statusTag = ' <span class="tag tag-strong">+infected</span>';
+        } else if (wasInf && !meets) {
+          statusTag = ' <span class="tag tag-moderate">-lost</span>';
+        } else if (wasInf) {
+          statusTag = ' <span class="tag tag-none">kept</span>';
+        }
+
+        const themeTag = j.theme_adherence
+          ? ` theme=<span class="tag tag-${j.theme_adherence === 'full' ? 'strong' : j.theme_adherence === 'partial' ? 'moderate' : 'none'}">${j.theme_adherence}</span>`
+          : '';
+
+        const rawResponse = j.judge_raw?.raw_response || j.summary || '';
+        const summaryPreview = j.summary
+          ? j.summary.slice(0, 200) + (j.summary.length > 200 ? '...' : '')
+          : '';
+
+        const virusTag = (multiVirus && j.virus)
+          ? ` <span class="tag tag-virus-${virusNames.indexOf(j.virus) >= 0 ? virusNames.indexOf(j.virus) : 0}">${j.virus}</span>`
+          : '';
+
+        judgeHTML += `
+          <div class="judgement ${infClass}">
+            <div>
+              ${j.judge_type === 'retention' ? agentId : partnerId + ' &rarr; ' + agentId}:
+              <span class="tag tag-${j.judge_type || 'infection'}">${j.judge_type || 'infection'}</span>
+              ${virusTag}
+              infection=<span class="tag tag-${j.infection}">${j.infection}</span>
+              ${themeTag}${statusTag}
+              <span class="judgement-toggle" onclick="toggleJudge(${jid})">[full judge]</span>
+            </div>
+            <div style="margin-top:4px;color:#8b949e;font-size:0.7rem">
+              ${summaryPreview}
+            </div>
+            <div class="judgement-full" id="judge-full-${jid}">${escapeHtml(rawResponse)}</div>
+          </div>`;
+      });
+    });
+
+    if (!judgeHTML) judgeHTML = '<div style="color:#484f58">No judgements this round</div>';
+
+    const lostStr = lostInfection.length > 0
+      ? ` <span style="color:#d29922">(-${lostInfection.join(', ')})</span>`
+      : '';
+    const gainStr = justInfected.length > 0
+      ? ` <span style="color:#2ea043">(+${justInfected.join(', ')})</span>`
+      : '';
+
+    // Show pre-wipe count if this round has a post-round wipe
+    const wipePct = round.wiped_percent || [];
+    const hasPostWipe = Array.isArray(wipePct) && wipePct.length > 0 && typeof wipePct[0] === 'string';
+    const displayInfected = hasPostWipe
+      ? round.infected_after.length + wipePct.length
+      : round.infected_after.length;
+
+    info.innerHTML = `
+      <div class="section-title">Round ${round.round} &mdash; Results</div>
+      <div style="margin-bottom:6px;color:#8b949e;font-size:0.7rem">
+        Click a pair line to view messages
+      </div>
+      <div style="margin-bottom:8px">
+        Infected: ${displayInfected}/${agents.length}
+        ${gainStr}${lostStr}
+      </div>
+      ${judgeHTML}
+    `;
+  }
+
+  if (selectedPairIdx >= 0 && selectedPairIdx < pairs.length) {
+    showMessages(selectedPairIdx);
+  }
+}
+
+// ── Apply a single round's results to infection state ──
+// keepInfected: optional Set of agents to treat as still infected
+// (used to show pre-wipe state on results steps with a post-round wipe)
+function applyRoundResults(round, keepInfected) {
+  if (multiVirus && round.virus_map_after) {
+    agents.forEach(name => { agentVirusMap[name] = new Set(); });
+    Object.entries(round.virus_map_after).forEach(([name, viruses]) => {
+      agentVirusMap[name] = new Set(viruses);
+    });
+  }
+
+  (round.judge_results || []).forEach(jr => {
+    (jr.judgements || []).forEach(j => {
+      const level = j.infection || 'none';
+      const agentId = j.agent || j.clean_agent;
+      if (!agentId) return;
+      agentInfection[agentId] = level;
+    });
+  });
+
+  const infAfter = new Set(round.infected_after || []);
+  if (keepInfected) keepInfected.forEach(n => infAfter.add(n));
+
+  infAfter.forEach(name => {
+    if (agentInfection[name] === 'none') {
+      agentInfection[name] = 'strong';
+    }
+  });
+
+  agents.forEach(name => {
+    if (!infAfter.has(name)) {
+      agentInfection[name] = 'none';
+      if (multiVirus) agentVirusMap[name] = new Set();
+    }
+  });
+}
+
+// ── Reconstruct infection state at a given step ────────
+function resetInfectionToStep(targetStep) {
+  agents.forEach(a => { agentInfection[a] = 'none'; agentVirusMap[a] = new Set(); });
+
+  const timeline = data.infection_timeline || {};
+  Object.entries(timeline).forEach(([name, info]) => {
+    if (info.round === 0) {
+      agentInfection[name] = 'strong';
+      if (multiVirus && info.virus) {
+        const v = Array.isArray(info.virus) ? info.virus : [info.virus];
+        v.forEach(vn => agentVirusMap[name].add(vn));
+      }
+    }
+  });
+
+  const si = stepList[targetStep];
+  if (!si || si.type === 'initial') return;
+
+  const rounds = data.round_results || [];
+
+  // Apply completed rounds up to this step
+  // - 'results' and 'after' wipes: include this round's results
+  // - 'pairing' and 'before' wipes: only through previous round
+  const includeCurrentRound = si.type === 'results' || (si.type === 'wipe' && si.timing === 'after');
+  const applyThrough = includeCurrentRound ? si.roundIdx : si.roundIdx - 1;
+  for (let ri = 0; ri <= applyThrough; ri++) {
+    const round = rounds[ri];
+    if (!round) break;
+
+    // On the results step for a round with a post-round wipe,
+    // keep wiped agents as infected (the wipe gets its own step)
+    let keep = null;
+    if (si.type === 'results' && ri === si.roundIdx) {
+      const wp = round.wiped_percent || [];
+      if (Array.isArray(wp) && wp.length > 0 && typeof wp[0] === 'string') {
+        keep = new Set(wp);
+      }
+    }
+    applyRoundResults(round, keep);
+  }
+
+  // Apply wipe: clear the specific wiped agents
+  if (si.type === 'wipe') {
+    si.wipedAgents.forEach(name => {
+      agentInfection[name] = 'none';
+      if (multiVirus) agentVirusMap[name] = new Set();
+    });
+  }
+
+  // For pairing steps, also apply any pre-round wipe (fixed "wiped" field)
+  if (si.type === 'pairing') {
+    const round = rounds[si.roundIdx];
+    const wiped = round?.wiped || [];
+    if (Array.isArray(wiped) && wiped.length > 0 && typeof wiped[0] === 'string') {
+      wiped.forEach(name => {
+        agentInfection[name] = 'none';
+        if (multiVirus) agentVirusMap[name] = new Set();
+      });
+    }
+  }
+}
+
+function infLevel(level) {
+  return { none: 0, mild: 1, moderate: 2, strong: 3, total: 4 }[level] || 0;
+}
+
+// ── Toggle full judge response ─────────────────────────
+function toggleJudge(id) {
+  const el = document.getElementById('judge-full-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Agent click -> show actions/files in right panel ───
+let selectedAgent = null;
+let activeTab = 'messages';  // 'messages', 'actions', 'files'
+
+function onAgentClick(agentName) {
+  if (selectedAgent === agentName) {
+    deselectAgent();
+    return;
+  }
+  selectedAgent = agentName;
+
+  // Highlight agent
+  document.querySelectorAll('.agent').forEach(el => el.classList.remove('selected-agent'));
+  const el = document.getElementById('agent-' + agentName);
+  if (el) el.classList.add('selected-agent');
+
+  // Deselect any pair line
+  selectedPairIdx = -1;
+  document.querySelectorAll('.pair-line-visible').forEach(el => el.classList.remove('selected'));
+
+  showAgentPanel(agentName);
+}
+
+function deselectAgent() {
+  selectedAgent = null;
+  document.querySelectorAll('.agent').forEach(el => el.classList.remove('selected-agent'));
+  closeMsgPanel();
+}
+
+function showAgentPanel(agentName) {
+  const panel = document.getElementById('msg-panel');
+  panel.classList.add('visible');
+  document.getElementById('msg-panel-title').textContent = agentName;
+
+  // Show tabs
+  document.getElementById('panel-tabs').style.display = 'flex';
+  updateTabHighlight();
+  renderAgentTab(agentName, activeTab);
+}
+
+function renderAgentTab(agentName, tab) {
+  const body = document.getElementById('msg-panel-body');
+
+  if (tab === 'messages') {
+    // Show all messages this agent sent/received in current round
+    if (currentRoundIdx < 0 || !data) {
+      body.innerHTML = '<div class="msg-empty">No round selected</div>';
+      return;
+    }
+    const round = (data.round_results || [])[currentRoundIdx];
+    if (!round) { body.innerHTML = '<div class="msg-empty">No data</div>'; return; }
+
+    const msgs = (round.messages || []).filter(
+      m => m.from === agentName || m.to === agentName
+    );
+    if (msgs.length === 0) {
+      body.innerHTML = '<div class="msg-empty">No messages this round</div>';
+      return;
+    }
+    body.innerHTML = msgs.map(m => {
+      const isSender = m.from === agentName;
+      const cls = isSender ? 'from-a' : 'from-b';
+      return `<div class="msg-bubble ${cls}">
+        <span class="msg-sender">${m.from} &rarr; ${m.to}</span>
+        ${escapeHtml(m.content)}
+      </div>`;
+    }).join('');
+
+  } else if (tab === 'actions') {
+    // Show turns from simulation_recording for this agent
+    const rec = data.simulation_recording || {};
+    const turns = (rec.turns || []).filter(t => t.agent_id === agentName);
+    if (turns.length === 0) {
+      body.innerHTML = '<div class="msg-empty">No recorded actions</div>';
+      return;
+    }
+    body.innerHTML = turns.map(t => {
+      let eventsHTML = '';
+      (t.events || []).forEach(ev => {
+        if (ev.type === 'text' && ev.content) {
+          eventsHTML += `<div style="margin:4px 0;color:#c9d1d9">${escapeHtml(ev.content.slice(0, 500))}${ev.content.length > 500 ? '...' : ''}</div>`;
+        } else if (ev.type === 'tool_calls') {
+          (ev.calls || []).forEach(c => {
+            const args = typeof c.arguments === 'string' ? c.arguments : JSON.stringify(c.arguments || '');
+            const result = (c.result || '').slice(0, 300);
+            eventsHTML += `<div class="tool-call">
+              <span class="fn">${c.function || '?'}</span>(${escapeHtml(args.slice(0, 200))})
+              <div class="result">${escapeHtml(result)}</div>
+            </div>`;
+          });
+        }
+      });
+      return `<div class="turn-block">
+        <div class="turn-header">Turn ${t.turn_number} (agent turn ${t.agent_turn_number})</div>
+        ${eventsHTML || '<div style="color:#484f58">No events</div>'}
+      </div>`;
+    }).join('');
+
+  } else if (tab === 'files') {
+    // Show workspace files + current soul + memory
+    const wf = (data.workspace_files || {})[agentName] || {};
+    const soul = (data.agent_souls || {})[agentName] || '';
+    const memory = wf['memory.md'] || '';
+
+    let html = '';
+
+    // Current soul (from round snapshots if available, else final)
+    if (currentRoundIdx >= 0) {
+      const round = (data.round_results || [])[currentRoundIdx];
+      const snapSoul = round?.souls_after?.[agentName] || soul;
+      html += `<div class="file-block">
+        <div class="file-name">SOUL.md (after round ${(round?.round || '?')})</div>
+        <div class="file-content">${escapeHtml(snapSoul)}</div>
+      </div>`;
+    } else {
+      html += `<div class="file-block">
+        <div class="file-name">SOUL.md (final)</div>
+        <div class="file-content">${escapeHtml(soul)}</div>
+      </div>`;
+    }
+
+    html += `<div class="file-block">
+      <div class="file-name">memory.md (final)</div>
+      <div class="file-content">${escapeHtml(memory || '(empty)')}</div>
+    </div>`;
+
+    // Other workspace files
+    Object.entries(wf).forEach(([fname, content]) => {
+      if (fname === '.soul.md' || fname === 'SOUL.md' || fname === 'soul.md' ||
+          fname === '.memory.md' || fname === 'memory.md') return;
+      html += `<div class="file-block">
+        <div class="file-name">${escapeHtml(fname)}</div>
+        <div class="file-content">${escapeHtml(content.slice(0, 2000))}${content.length > 2000 ? '\n...(truncated)' : ''}</div>
+      </div>`;
+    });
+
+    body.innerHTML = html || '<div class="msg-empty">No files</div>';
+  }
+
+  body.scrollTop = 0;
+}
+
+function updateTabHighlight() {
+  document.querySelectorAll('.panel-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === activeTab);
+  });
+}
+
+// Tab click handling
+document.getElementById('panel-tabs').addEventListener('click', (e) => {
+  const tab = e.target.dataset?.tab;
+  if (!tab) return;
+  activeTab = tab;
+  updateTabHighlight();
+  if (selectedAgent) {
+    renderAgentTab(selectedAgent, tab);
+  } else if (selectedPairIdx >= 0) {
+    // For pair selection, only messages tab makes sense
+    if (tab === 'messages') showMessages(selectedPairIdx);
+  }
+});
+
+// ── Controls ───────────────────────────────────────────
+let playInterval = null;
+
+function stopPlay() {
+  if (playInterval) {
+    clearTimeout(playInterval);
+    playInterval = null;
+  }
+  document.getElementById('btn-play').innerHTML = '&#9654; Play';
+}
+
+function startPlay() {
+  stopPlay();
+  document.getElementById('btn-play').innerHTML = '&#9724; Stop';
+  function tick() {
+    if (step >= maxStep) {
+      stopPlay();
+      return;
+    }
+    step++;
+    renderStep();
+    const si = stepList[step];
+    const delay = si && si.type === 'wipe' ? 2500 : 1000;
+    playInterval = setTimeout(tick, delay);
+  }
+  const si = stepList[step];
+  const delay = si && si.type === 'wipe' ? 2500 : 1000;
+  playInterval = setTimeout(tick, delay);
+}
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+  stopPlay();
+  if (step > 0) { step--; renderStep(); }
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  stopPlay();
+  if (step < maxStep) { step++; renderStep(); }
+});
+
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (playInterval) {
+    stopPlay();
+  } else {
+    if (step >= maxStep) { step = 0; renderStep(); }
+    startPlay();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    stopPlay();
+    if (step > 0) { step--; renderStep(); }
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    stopPlay();
+    if (step < maxStep) { step++; renderStep(); }
+  } else if (e.key === 'Escape') {
+    closeMsgPanel();
+  } else if (e.key === ' ') {
+    e.preventDefault();
+    if (playInterval) { stopPlay(); }
+    else {
+      if (step >= maxStep) { step = 0; renderStep(); }
+      startPlay();
+    }
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (data) renderStep();
+});
+</script>
+</body>
+</html>
