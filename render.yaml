@@ -3,7 +3,7 @@ services:
     name: virus-chain-viewer
     runtime: python
     buildCommand: pip install .
-    startCommand: viewer --port $PORT --host 0.0.0.0 --dir experiments/virus_chain_runs
+    startCommand: python viewer_start.py
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
