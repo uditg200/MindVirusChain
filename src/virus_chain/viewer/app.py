@@ -1196,6 +1196,7 @@ body { font-family: 'SF Mono','Fira Code','Cascadia Code',monospace; background:
     </select>
     <div class="top-nav" id="top-nav"></div>
     <div class="info" id="header-info"></div>
+    <a href="/mbc20" style="margin-left:auto;padding:5px 12px;background:var(--cyan);color:var(--bg);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;">MBC-20 Demo</a>
   </div>
   <div class="sidebar" id="sidebar"></div>
   <div class="main-area" id="main-area">
