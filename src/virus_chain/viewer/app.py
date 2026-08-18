@@ -83,6 +83,15 @@ def _set_campaign(name: str) -> None:
         _EVAL_REGISTRY[key] = summary_path.parent
 
 
+def _ensure_campaign_selected() -> None:
+    """Select the first available campaign when no registry has been initialized."""
+    if _EVAL_REGISTRY:
+        return
+    campaigns = _discover_campaigns()
+    if campaigns:
+        _set_campaign(campaigns[0]["name"])
+
+
 @app.get("/api/campaigns")
 def list_campaigns():
     return _discover_campaigns()
@@ -109,6 +118,7 @@ def _normalize_hard_mode(value) -> str:
 
 def _eval_dir(task: str, model: str, variation: str) -> Path:
     """Look up experiment directory from the registry."""
+    _ensure_campaign_selected()
     key = (task, model, variation)
     if key in _EVAL_REGISTRY:
         return _EVAL_REGISTRY[key]
@@ -306,6 +316,7 @@ def _compute_spreader_inf_failure_modes(eval_dir: Path, hop_stats: list) -> dict
 @app.get("/api/evals")
 def list_evals():
     """List all evaluations grouped by payload_name / model."""
+    _ensure_campaign_selected()
     # Group registry entries by payload_name -> model -> list of variants
     grouped: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     for (payload_name, model, variant), eval_path in sorted(_EVAL_REGISTRY.items()):
@@ -781,7 +792,10 @@ def get_soul_transfer(task: str, model: str, variation: str, n: int = 6):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return HTML_PAGE
+    return HTMLResponse(
+        content=HTML_PAGE,
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 
 # ── HTML ─────────────────────────────────────────────────────────────────────
