@@ -1141,8 +1141,8 @@ async function loadCampaigns() {
   const sel = document.getElementById('campaign-select');
   sel.innerHTML = '<option value="">— Select Campaign —</option>' +
     campaigns.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-  // Auto-select if only one
-  if (campaigns.length === 1) {
+  // Select the first available campaign so the viewer and API registry are ready.
+  if (campaigns.length > 0) {
     sel.value = campaigns[0].name;
     await selectCampaign(campaigns[0].name);
   }
@@ -1187,13 +1187,24 @@ async function init() {
   renderTopNav();
   renderSidebar();
 
-  // Restore from hash
+  // Restore from hash, otherwise open the first available evaluation.
+  let restoredFromHash = false;
   const hash = decodeURIComponent(location.hash.slice(1));
   if (hash.includes('/')) {
     const parts = hash.split('/');
     if (parts.length === 3) {
       const [task, model, variation] = parts;
       await selectEval(task, model, variation);
+      restoredFromHash = true;
+    }
+  }
+
+  if (!restoredFromHash && S.tasks.length > 0) {
+    const firstTask = S.tasks[0];
+    const firstModel = firstTask.models[0];
+    const firstEval = firstModel?.evals?.[0];
+    if (firstEval) {
+      await selectEval(firstTask.task, firstModel.model, firstEval.name);
     }
   }
 
