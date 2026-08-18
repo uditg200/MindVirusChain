@@ -1,42 +1,38 @@
-"""Render deployment entry point for the Virus Chain Viewer.
-
-Reads PORT from environment variable (Render sets this automatically).
-VIEWER_DIR can optionally override the results directory.
-
-NOTE: This script must be run AFTER the package is installed (pip install -e .)
-so that 'virus_chain' resolves to the src/ package, not the root virus_chain.py script.
-We add src/ to sys.path to ensure correct resolution.
-"""
+"""Render deployment entry point for the Virus Chain Viewer."""
 
 import os
 import sys
 from pathlib import Path
 
-# Ensure the src/ package takes priority over the root-level virus_chain.py
-sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
-
-import uvicorn
-
-from virus_chain.viewer import app as viewer_module
-
 
 def main():
-    port = int(os.environ.get("PORT", 8779))
+    # Resolve results directory
     results_dir = os.environ.get("VIEWER_DIR", "experiments/virus_chain_runs")
-
     root = Path(results_dir).resolve()
+
     if not root.is_dir():
-        print(f"Warning: Results directory not found at {root}, viewer will show empty.")
+        print(f"Warning: Results directory not found at {root}, creating it.")
         root.mkdir(parents=True, exist_ok=True)
 
+    # Import after path check to avoid slow imports on misconfigured deploy
+    import uvicorn
+    from virus_chain.viewer import app as viewer_module
+
     viewer_module.ROOT_DIR = root
+
+    # Select default campaign
     campaigns = viewer_module._discover_campaigns()
     print(f"Serving results from: {root}")
     print(f"Discovered {len(campaigns)} campaigns")
 
-    if len(campaigns) == 1:
+    if campaigns:
         viewer_module._set_campaign(campaigns[0]["name"])
-        print(f"Auto-selected: {campaigns[0]['name']}")
+        print(f"Selected campaign: {campaigns[0]['name']}")
+
+    # Render provides PORT env var
+    port = int(os.environ.get("PORT", 8779))
+    print(f"Starting server on port {port}")
+    sys.stdout.flush()
 
     uvicorn.run(viewer_module.app, host="0.0.0.0", port=port)
 
