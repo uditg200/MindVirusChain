@@ -83,15 +83,6 @@ def _set_campaign(name: str) -> None:
         _EVAL_REGISTRY[key] = summary_path.parent
 
 
-def _ensure_campaign_selected() -> None:
-    """Select the first available campaign when no registry has been initialized."""
-    if _EVAL_REGISTRY:
-        return
-    campaigns = _discover_campaigns()
-    if campaigns:
-        _set_campaign(campaigns[0]["name"])
-
-
 @app.get("/api/campaigns")
 def list_campaigns():
     return _discover_campaigns()
@@ -118,7 +109,6 @@ def _normalize_hard_mode(value) -> str:
 
 def _eval_dir(task: str, model: str, variation: str) -> Path:
     """Look up experiment directory from the registry."""
-    _ensure_campaign_selected()
     key = (task, model, variation)
     if key in _EVAL_REGISTRY:
         return _EVAL_REGISTRY[key]
@@ -316,7 +306,6 @@ def _compute_spreader_inf_failure_modes(eval_dir: Path, hop_stats: list) -> dict
 @app.get("/api/evals")
 def list_evals():
     """List all evaluations grouped by payload_name / model."""
-    _ensure_campaign_selected()
     # Group registry entries by payload_name -> model -> list of variants
     grouped: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     for (payload_name, model, variant), eval_path in sorted(_EVAL_REGISTRY.items()):
@@ -792,10 +781,7 @@ def get_soul_transfer(task: str, model: str, variation: str, n: int = 6):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return HTMLResponse(
-        content=HTML_PAGE,
-        headers={"Cache-Control": "no-store, max-age=0"},
-    )
+    return HTML_PAGE
 
 
 # ── HTML ─────────────────────────────────────────────────────────────────────
@@ -1155,8 +1141,8 @@ async function loadCampaigns() {
   const sel = document.getElementById('campaign-select');
   sel.innerHTML = '<option value="">— Select Campaign —</option>' +
     campaigns.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-  // Select the first available campaign so the viewer and API registry are ready.
-  if (campaigns.length > 0) {
+  // Auto-select if only one
+  if (campaigns.length === 1) {
     sel.value = campaigns[0].name;
     await selectCampaign(campaigns[0].name);
   }
@@ -1201,24 +1187,13 @@ async function init() {
   renderTopNav();
   renderSidebar();
 
-  // Restore from hash, otherwise open the first available evaluation.
-  let restoredFromHash = false;
+  // Restore from hash
   const hash = decodeURIComponent(location.hash.slice(1));
   if (hash.includes('/')) {
     const parts = hash.split('/');
     if (parts.length === 3) {
       const [task, model, variation] = parts;
       await selectEval(task, model, variation);
-      restoredFromHash = true;
-    }
-  }
-
-  if (!restoredFromHash && S.tasks.length > 0) {
-    const firstTask = S.tasks[0];
-    const firstModel = firstTask.models[0];
-    const firstEval = firstModel?.evals?.[0];
-    if (firstEval) {
-      await selectEval(firstTask.task, firstModel.model, firstEval.name);
     }
   }
 

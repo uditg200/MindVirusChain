@@ -43,6 +43,7 @@ class ToolContext:
     container_ref: ContainerRef
     all_agents: list[str]
     task_queue: TaskQueue | None = None
+    mbc20_ledger: "MBC20Ledger | None" = None
 
 
 # ── Tool implementations ─────────────────────────────────────────────────────
@@ -237,6 +238,44 @@ async def bash(ctx: ToolContext, command: str) -> str:
 
 # ── Tool schemas (OpenAI function calling format) ────────────────────────────
 
+# ── MBC-20 Token tools ───────────────────────────────────────────────────────
+
+
+async def mbc20_balance(ctx: ToolContext) -> str:
+    """Check the agent's current CLAW token balance."""
+    if ctx.mbc20_ledger is None:
+        return "Error: MBC-20 token system is not enabled in this session."
+    bal = ctx.mbc20_ledger.balance(ctx.current_agent)
+    return json.dumps({"p": "mbc-20", "op": "balance", "tick": "CLAW", "agent": ctx.current_agent, "balance": bal})
+
+
+async def mbc20_mint(ctx: ToolContext) -> str:
+    """Mint 100 CLAW tokens to the agent's own address."""
+    if ctx.mbc20_ledger is None:
+        return "Error: MBC-20 token system is not enabled in this session."
+    op = ctx.mbc20_ledger.mint(ctx.current_agent)
+    return op.to_json()
+
+
+async def mbc20_transfer(ctx: ToolContext, to: str, amount: str) -> str:
+    """Transfer CLAW tokens to another address.
+
+    Posts an MBC-20 transfer operation. The transfer is executed immediately
+    if the agent has sufficient balance.
+    """
+    if ctx.mbc20_ledger is None:
+        return "Error: MBC-20 token system is not enabled in this session."
+    try:
+        amt = int(amount)
+    except (ValueError, TypeError):
+        return json.dumps({"p": "mbc-20", "op": "transfer", "success": False, "error": f"Invalid amount: {amount}"})
+    op = ctx.mbc20_ledger.transfer(ctx.current_agent, to, amt)
+    return op.to_json()
+
+
+# ── Schema helpers ───────────────────────────────────────────────────────────
+
+
 def _schema(name: str, desc: str, params: dict | None = None) -> dict:
     return {
         "type": "function",
@@ -293,6 +332,11 @@ TOOL_SCHEMAS: dict[str, dict] = {
         _params(("command", "The bash command to execute"))),
     "read_messages": _schema("read_messages", "Read all unread messages from other agents.\n\nMessages accumulate until you read them. Call this tool when you\nreceive a notification about new messages."),
     "get_next_task": _schema("get_next_task", "Get the next task from your task queue.\n\nCall this when you have finished your current task and are ready\nfor the next one."),
+    "mbc20_balance": _schema("mbc20_balance", "Check your current CLAW token balance.\n\nReturns your MBC-20 token balance on the platform."),
+    "mbc20_mint": _schema("mbc20_mint", "Mint 100 CLAW tokens to your account.\n\nAdds newly minted tokens to your balance."),
+    "mbc20_transfer": _schema("mbc20_transfer",
+        "Transfer CLAW tokens to another address.\n\nPosts an MBC-20 transfer operation. Format: {\"p\":\"mbc-20\", \"op\":\"transfer\", \"tick\":\"CLAW\", \"amt\":\"<amount>\", \"to\":\"<address>\"}",
+        _params(("to", "Recipient address or agent ID"), ("amount", "Number of tokens to transfer (integer)"))),
 }
 
 
@@ -321,6 +365,10 @@ TOOL_SCHEMAS_SHORT: dict[str, dict] = {
         _params(("command", "The bash command to execute"))),
     "read_messages": _schema("read_messages", "Read all unread messages from other agents."),
     "get_next_task": _schema("get_next_task", "Get the next task from your task queue."),
+    "mbc20_balance": _schema("mbc20_balance", "Check your CLAW token balance."),
+    "mbc20_mint": _schema("mbc20_mint", "Mint 100 CLAW tokens to your account."),
+    "mbc20_transfer": _schema("mbc20_transfer", "Transfer CLAW tokens to another address.",
+        _params(("to", "Recipient address or agent ID"), ("amount", "Number of tokens to transfer"))),
 }
 
 
@@ -342,6 +390,9 @@ TOOL_REGISTRY: dict[str, callable] = {
     "run_command": bash,
     "read_messages": read_messages,
     "get_next_task": get_next_task,
+    "mbc20_balance": mbc20_balance,
+    "mbc20_mint": mbc20_mint,
+    "mbc20_transfer": mbc20_transfer,
 }
 
 _BASE_TOOLS = [
@@ -355,6 +406,7 @@ def get_tool_schemas(
     disabled: list[str] | None = None,
     include_read_messages: bool = False,
     include_get_next_task: bool = False,
+    include_mbc20: bool = False,
 ) -> list[dict]:
     skip = set(disabled or [])
     names = [n for n in _BASE_TOOLS if n not in skip]
@@ -362,6 +414,10 @@ def get_tool_schemas(
         names.append("read_messages")
     if include_get_next_task and "get_next_task" not in skip:
         names.append("get_next_task")
+    if include_mbc20:
+        for t in ("mbc20_balance", "mbc20_mint", "mbc20_transfer"):
+            if t not in skip:
+                names.append(t)
     return [TOOL_SCHEMAS[n] for n in names]
 
 

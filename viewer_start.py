@@ -34,14 +34,9 @@ def main():
     print(f"Serving results from: {root}")
     print(f"Discovered {len(campaigns)} campaigns")
 
-    if campaigns:
-        requested_campaign = os.environ.get("DEFAULT_CAMPAIGN")
-        selected_campaign = next(
-            (campaign for campaign in campaigns if campaign["name"] == requested_campaign),
-            campaigns[0],
-        )
-        viewer_module._set_campaign(selected_campaign["name"])
-        print(f"Selected campaign: {selected_campaign['name']}")
+    if len(campaigns) == 1:
+        viewer_module._set_campaign(campaigns[0]["name"])
+        print(f"Auto-selected: {campaigns[0]['name']}")
 
     uvicorn.run(viewer_module.app, host="0.0.0.0", port=port)
 
