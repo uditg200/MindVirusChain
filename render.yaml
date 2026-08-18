@@ -2,7 +2,7 @@ services:
   - type: web
     name: virus-chain-viewer
     runtime: python
-    buildCommand: pip install .
+    buildCommand: pip install -e .
     startCommand: python viewer_start.py
     envVars:
       - key: PYTHON_VERSION

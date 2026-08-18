@@ -2,11 +2,18 @@
 
 Reads PORT from environment variable (Render sets this automatically).
 VIEWER_DIR can optionally override the results directory.
+
+NOTE: This script must be run AFTER the package is installed (pip install -e .)
+so that 'virus_chain' resolves to the src/ package, not the root virus_chain.py script.
+We add src/ to sys.path to ensure correct resolution.
 """
 
 import os
 import sys
 from pathlib import Path
+
+# Ensure the src/ package takes priority over the root-level virus_chain.py
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 import uvicorn
 
